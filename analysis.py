@@ -39,6 +39,7 @@ with open(match_data_json_path, "r") as f:
 match_struc_data_df = pd.read_json(match_structured_data_json_path)
 match_struc_data_df[["possession_player_id", "possession_homeaway"]
                     ] = pd.json_normalize(match_struc_data_df["possession"])
+match_struc_data_df.drop(["possession"], axis=1, inplace=True)
 
 ## There are certain frames where the group is None. Drop those rows where time == None
 match_struc_data_df = match_struc_data_df[~match_struc_data_df["time"].isna()]
