@@ -10,7 +10,9 @@ Author: @sijielim
 import json
 import os
 
+import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 from dotenv import load_dotenv
 
 from blue_crow_sports.utils import (explode_data,
@@ -210,6 +212,21 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
             stat_summary_df = pd.concat([stat_summary_df, player_summarised_stat_df], axis=0)
 
 stat_summary_df.sort_values(["speed"], ascending=False, inplace=True)
+
+pd.DataFrame.from_dict(trackobj_mapping_dict)
+
+##################### VISUALISATION #####################
+
+ax = sns.scatterplot(data=stat_summary_df, x="speed", y="dist", hue="team")
+for i, point in stat_summary_df.iterrows():
+    player_name = point['speed']
+    player_id = point['speed']
+    speed = point['speed']
+    dist = point['dist'] / 1000
+    ax.text(speed+.02, dist*1000, f"{speed:.2f} m/s, {dist:.0f} km",
+            size=5)
+plt.show()
+
 
 ##################### WORKINGS #####################
 
