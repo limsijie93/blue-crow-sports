@@ -126,7 +126,7 @@ def summarise_distance_time(df: pd.DataFrame,
         copy_df = df[df["period"] == period]
         total_time_record = len(df)
 
-        for time_idx, time in enumerate(copy_df["time"]):
+        for time_idx, time in zip(copy_df.index, copy_df["time"]):
             if time_idx < (total_time_record - frame_threshold):
                 print(f"Frame {time_idx} / {total_time_record} @ time {time}")
                 print("^" * 20)
