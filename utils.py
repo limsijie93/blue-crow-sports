@@ -38,12 +38,12 @@ def extract_home_away_player_trackobj(match_info: dict):
     player_mapping_list = []
 
     for player in match_info["players"]:
+        player_mapping = []
         player_trackobj = player["trackable_object"]
         player_mapping.append(player_trackobj)
 
         first_name = player["first_name"].lower()
         last_name = player["last_name"].lower()
-        player_mapping = []
         if first_name:
             player_mapping.append(f"{first_name}_{last_name}")
         else:
