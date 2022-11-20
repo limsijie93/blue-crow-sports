@@ -37,8 +37,8 @@ match_structured_data_json_path = os.path.join(match_data_dir, "structured_data.
 with open(match_data_json_path, "r") as f:
     match_info_dict = json.load(f)
 match_struc_data_df = pd.read_json(match_structured_data_json_path)
-match_struc_data_df[["trackable_object", "group"]] = pd.json_normalize(match_struc_data_df["possession"])
-match_struc_data_df.drop(["possession"], axis=1, inplace=True)
+match_struc_data_df[["possession_player_id", "possession_homeaway"]
+                    ] = pd.json_normalize(match_struc_data_df["possession"])
 
 ## There are certain frames where the group is None. Drop those rows where time == None
 match_struc_data_df = match_struc_data_df[~match_struc_data_df["time"].isna()]
@@ -118,6 +118,7 @@ match_explode_data_df = match_explode_data_df.reindex(
 match_explode_data_df.columns.values
 
 match_struc_data_df.loc[58416, "data"][0]
+match_struc_data_df[~match_struc_data_df["possession"].isna()]
 match_struc_data_df[match_struc_data_df["55_x"].isna()]
 match_struc_data_df[~match_struc_data_df["home_team_x"].isna()]
 match_struc_data_df[~match_struc_data_df["Manchester City_track_id"].isna()]
