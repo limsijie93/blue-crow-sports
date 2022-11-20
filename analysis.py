@@ -129,7 +129,7 @@ total_time_record = len(match_struc_data_df)
 frame_threshold = 10 # Threshold number of frames to consider as continous movement
 
 for time_idx, time in enumerate(match_struc_data_df["time"]):
-    if time_idx != (total_time_record - frame_threshold):
+    if time_idx < (total_time_record - frame_threshold):
         print(f"Frame {time_idx} / {total_time_record} @ time {time}")
         print("^" * 20)
         player_id_in_frame_list = match_struc_data_df.at[time_idx, "player_id_captured"]
