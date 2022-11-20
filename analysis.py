@@ -9,6 +9,7 @@ Author: @sijielim
 
 import json
 import os
+import plotly.express as px
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -71,7 +72,8 @@ match_explode_data_df = match_explode_data_df.reindex(
 # match_explode_data_df[match_explode_data_df["time"] == "45:00.00"]
 
 ## Summarise the distance travelled by each player from frame to frame
-FRAME_RATE_SMOOTHING_THRESHOLD = 10 # Threshold number of frames to consider as continous movement
+# Threshold number of frames to consider as continous movement
+FRAME_RATE_SMOOTHING_THRESHOLD = 1
 TIME_PER_FRAME_RATE = 0.10
 match_player_stats_data_df = summarise_distance_time(
     df=match_explode_data_df,
@@ -79,11 +81,6 @@ match_player_stats_data_df = summarise_distance_time(
     time_per_frame_rate=TIME_PER_FRAME_RATE)
 match_player_stats_data_df = match_player_stats_data_df.reindex(
     sorted(match_player_stats_data_df.columns), axis=1)
-
-player_id = "10748"
-match_player_stats_data_df[~match_player_stats_data_df[f"{player_id}_dist"].isna()].iloc[:20][["time", f"{player_id}_track_id", f"{player_id}_dist", f"{player_id}_time", f"{player_id}_x", f"{player_id}_y"]]
-match_player_stats_data_df.iloc[:20][["time", f"{player_id}_track_id", f"{player_id}_dist", f"{player_id}_time", f"{player_id}_x", f"{player_id}_y"]]
-match_player_stats_data_df.columns.values
 
 ## Calculate:
 ## 1. Distance: Total, Onball, Offball
@@ -216,8 +213,8 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
             player_match_stat[team_pos][player_trackobj]["time_teamnopos_offball"] = time_teamnopos
             player_match_stat[team_pos][player_trackobj]["speed_teamnopos_offball"] = dist_teamnopos / time_teamnopos
 
-            assert  dist == dist_teamnopos + dist_teampos, "Distance when team not in posession is wrong"
-            assert  time == time_teamnopos + time_teampos, "Time when team not in posession is wrong"
+            assert  abs(dist - dist_teamnopos - dist_teampos) <= 1e-1, f"Distance when team not in posession is wrong. {player_trackobj}: {dist} {dist_teamnopos} + {dist_teampos}"
+            assert  abs(time - time_teamnopos - time_teampos) <= 1e-1, f"Time when team not in posession is wrong. {player_trackobj}: {time} {time_teamnopos} + {time_teampos}"
             # ############################################################
 
             player_summarised_stat_df = pd.DataFrame(player_match_stat[team_pos][player_trackobj], index=[player_trackobj])
@@ -225,51 +222,52 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
             stat_summary_df = pd.concat([stat_summary_df, player_summarised_stat_df], axis=0)
 
 stat_summary_df.sort_values(["speed"], ascending=False, inplace=True)
+player_map_df = pd.DataFrame(player_mapping_list, columns=["track_id", "name", "player_id"])
+player_map_df.set_index("track_id", inplace=True)
+player_stats_summary_df = stat_summary_df.merge(player_map_df, left_index=True, right_index=True)
 
 stat_summary_df["time"].sum()
 match_explode_data_df[match_explode_data_df["num_player_captured"] > 0]
 
-pd.DataFrame(player_mapping_list.items())
 
 ##################### VISUALISATION #####################
+charts_to_plot_list = [["dist", "speed", "time"],
+                       ["dist_onball", "speed_onball", "time_onball"],
+                       ["dist_offball", "speed_offball", "time_offball"],
+                       ["dist_teampos_onball", "speed_teampos_onball", "time_teampos_onball"],
+                       ["dist_teampos_offball", "speed_teampos_offball", "time_teampos_offball"],
+                       ["dist_teamnopos_offball", "speed_teamnopos_offball", "time_teamnopos_offball"]
+                       ]
 
-ax = sns.scatterplot(data=stat_summary_df, x="speed", y="dist", hue="team")
-for i, point in stat_summary_df.iterrows():
-    player_name = point['speed']
-    player_id = point['speed']
-    speed = point['speed']
-    dist = point['dist'] / 1000
-    ax.text(speed+.02, dist*1000, f"{speed:.2f} m/s, {dist:.0f} km",
-            size=5)
-plt.show()
+for x, y, z in charts_to_plot_list:
+    fig = px.scatter(player_stats_summary_df,
+                     x=x, y=y, size=z, color="team",
+                     title=f"{y} (y-axis) vs {x} (x-axis)",
+                     text="name",
+                     hover_data={
+                        "name": True, "player_id": True,
+                        x: True, y: True, z: True
+                     })
+    fig.update_traces(textposition='center right', textfont={"size": 6})
+    fig.update_layout(hoverlabel={"bgcolor": "white",
+                                  "font_size": 7})
+    fig.show()
 
+# ax = sns.scatterplot(data=player_stats_summary_df, x=x, y=y, hue="team")
+# plt.title(f"{y} (y-axis) vs {x} (x-axis)")
+# for i, point in player_stats_summary_df.iterrows():
+#     player_name = point['name']
+#     player_id = point['player_id']
+#     point_y = point[y]
+#     point_x = point[x] / 1000
+#     ax.text(point_x * 1000 * 1.01, point_y * 1.01,
+#             f"{player_name} ({player_id})\n{point_y:.2f} m/s, \n{point_x:.0f} km", size=5)
+# ax.legend()
+# plt.show()
 
 ##################### WORKINGS #####################
 
-copy_df = match_explode_data_df.copy()
-total_time_record = len(match_explode_data_df)
 
-from blue_crow_sports.utils import calc_dist
-
-for time_idx, time in enumerate(copy_df["time"]):
-    if time_idx < (total_time_record - FRAME_THRESHOLD):
-        player_trackobj_in_frame_list = copy_df.at[time_idx, "player_trackobj_captured"]
-        num_players_in_frame = len(player_trackobj_in_frame_list)
-        for player_idx, player_trackobj in enumerate(player_trackobj_in_frame_list):
-            if player_trackobj in copy_df.at[time_idx + FRAME_THRESHOLD, "player_trackobj_captured"]:
-                x1 = copy_df.at[time_idx, f"{player_trackobj}_x"]
-                x2 = copy_df.at[time_idx + FRAME_THRESHOLD, f"{player_trackobj}_x"]
-                y1 = copy_df.at[time_idx, f"{player_trackobj}_y"]
-                y2 = copy_df.at[time_idx + FRAME_THRESHOLD, f"{player_trackobj}_y"]
-                distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2) / FRAME_THRESHOLD
-                copy_df.at[time_idx, f"{player_trackobj}_dist"] = distance
-                copy_df.at[time_idx, f"{player_trackobj}_time"] = FRAME_THRESHOLD * 0.10
-
-                if x1 == np.nan or x2 == np.nan or y1 == np.nan or y2 == np.nan:
-                    print(f'{copy_df.at[time_idx, "time"]}, {copy_df.at[time_idx+FRAME_THRESHOLD, "time"]}')
-                    print(f"{time_idx} {player_trackobj}, {x1}, {x2}, {y1}, {y2}, {distance}")
-
-import numpy as np
 match_player_stats_data_df["player_trackobj_captured"].sum()
 
 match_player_stats_data_df.columns.values
@@ -310,3 +308,4 @@ match_info_dict["players"][0]
 ## 5. There are some stoppage time moments that are also captured. In those moments, the players are moving, but they are not in a competitive mode.
 ## This obscures their speed because there's no real intention to be fast.
 ## Do we need to account for the focal length of the camera? Are we making too much assumptions about the data?
+## 6. Sideway movements are not well-captured
