@@ -35,15 +35,17 @@ def extract_home_away_player_trackobj(match_info: dict):
     home_team_trackobj_list, away_team_trackobj_list = [], []
     home_team_trackobj = match_info["home_team"]["id"]
     away_team_trackobj = match_info["away_team"]["id"]
+    trackobj_mapping_dict = {}
 
     for player in match_info["players"]:
         player_trackobj = player["trackable_object"]
+        trackobj_mapping_dict[player_trackobj] = player["name"]
         player_team_trackobj = player["team_id"]
         if player_team_trackobj == home_team_trackobj:
             home_team_trackobj_list.append(player_trackobj)
         elif player_team_trackobj == away_team_trackobj:
             away_team_trackobj_list.append(player_trackobj)
-    return home_team_trackobj_list, away_team_trackobj_list
+    return home_team_trackobj_list, away_team_trackobj_list, trackobj_mapping_dict
 
 def explode_data(df: pd.DataFrame,
                  match_info: dict,
@@ -52,7 +54,7 @@ def explode_data(df: pd.DataFrame,
     """
     Explode the list of dictionaries that are in the "data" column in the dataframe
     """
-    home_player_trackobj_list, away_player_trackobj_list = extract_home_away_player_trackobj(match_info)
+    home_player_trackobj_list, away_player_trackobj_list, _ = extract_home_away_player_trackobj(match_info)
     full_player_trackobj_list = sorted(home_player_trackobj_list + away_player_trackobj_list)
     player_trackobj_in_frame_list = []
 

@@ -51,7 +51,7 @@ match_struc_data_df = match_struc_data_df.reset_index(drop=True)
 match_struc_data_df["data_length"] = match_struc_data_df["data"].apply(lambda x: len(x))
 match_struc_data_df["player_trackobj_captured"] = [[]] * len(match_struc_data_df)
 
-home_player_trackobj_list, away_player_trackobj_list = extract_home_away_player_trackobj(match_info=match_info_dict)
+home_player_trackobj_list, away_player_trackobj_list, trackobj_mapping_dict = extract_home_away_player_trackobj(match_info=match_info_dict)
 
 ## Explode the data column into individual column for each player using the trackable object id
 for idx, track_list in enumerate(match_struc_data_df["data"]):
@@ -204,9 +204,11 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
             assert  time == time_teamnopos + time_teampos, "Time when team not in posession is wrong"
             # ############################################################
 
-            stat_summary_df = stat_summary_df.append(
-                pd.DataFrame(player_match_stat[team_pos][player_trackobj], index=[player_trackobj]))
+            player_summarised_stat_df = pd.DataFrame(player_match_stat[team_pos][player_trackobj], index=[player_trackobj])
+            player_summarised_stat_df["team"] = team_pos
+            stat_summary_df = pd.concat([stat_summary_df, player_summarised_stat_df], axis=0)
 
+stat_summary_df.sort_values(["speed"], ascending=False, inplace=True)
 
 ##################### WORKINGS #####################
 
@@ -250,3 +252,4 @@ match_info_dict["players"][0]
 ## On-ball movement vs Off-ball movement
 ## 5. There are some stoppage time moments that are also captured. In those moments, the players are moving, but they are not in a competitive mode.
 ## This obscures their speed because there's no real intention to be fast.
+## Do we need to account for the focal length of the camera? Are we making too much assumptions about the data?
