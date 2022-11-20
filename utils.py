@@ -22,9 +22,10 @@ def extract_home_away_player_id(match_info: dict):
 
     for player in match_info["players"]:
         player_id = player["id"]
-        if player_id == home_team_id:
+        player_team_id = player["team_id"]
+        if player_team_id == home_team_id:
             home_team_id_list.append(player_id)
-        elif player_id == away_team_id:
+        elif player_team_id == away_team_id:
             away_team_id_list.append(player_id)
     return home_team_id_list, away_team_id_list
 

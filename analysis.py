@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 
-from blue_crow_sports.utils import explode_data, summarise_distance_time
+from blue_crow_sports.utils import explode_data, summarise_distance_time, extract_home_away_player_id
 
 load_dotenv("blue_crow_sports/.env")
 
@@ -51,7 +51,8 @@ match_struc_data_df = match_struc_data_df.reset_index(drop=True)
 match_struc_data_df["data_length"] = match_struc_data_df["data"].apply(lambda x: len(x))
 match_struc_data_df["player_id_captured"] = [[]] * len(match_struc_data_df)
 
-## Processing using a list comprehension to run it faster
+home_player_id_list, away_player_id_list = extract_home_away_player_id(match_info=match_info_dict)
+
 for idx, track_list in enumerate(match_struc_data_df["data"]):
     match_explode_data_df = explode_data(df=match_struc_data_df,
                                          match_info=match_info_dict,
@@ -62,10 +63,16 @@ match_explode_data_df = match_explode_data_df.reindex(
 
 frame_threshold = 10 # Threshold number of frames to consider as continous movement
 
-
 match_player_stats_data_df = summarise_distance_time(df=match_explode_data_df, frame_threshold=10)
 match_player_stats_data_df = match_player_stats_data_df.reindex(
     sorted(match_player_stats_data_df.columns), axis=1)
+
+
+for home_player_idx, home_player_id in enumerate(home_player_id_list):
+    match_player_stats_data_df[match_player_stats_data_df[f"{home_player_id}_dist"]]
+away_player_id_list
+
+match_player_stats_data_df
 
 ##################### WORKINGS #####################
 
