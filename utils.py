@@ -21,8 +21,8 @@ def extract_home_away_player_trackobj(match_info: dict):
     away_team_trackobj = match_info["away_team"]["id"]
 
     for player in match_info["players"]:
-        player_trackobj = player["id"]
-        player_team_trackobj = player["team_trackobj"]
+        player_trackobj = player["trackable_object"]
+        player_team_trackobj = player["team_id"]
         if player_team_trackobj == home_team_trackobj:
             home_team_trackobj_list.append(player_trackobj)
         elif player_team_trackobj == away_team_trackobj:
@@ -51,13 +51,11 @@ def explode_data(df: pd.DataFrame,
 
         x = tracked.get("x")
         y = tracked.get("y")
-        track_trackobj = tracked.get("track_trackobj")
+        track_id = tracked.get("track_id")
 
         df.at[row_idx, f"{player_trackobj}_x"] = x
         df.at[row_idx, f"{player_trackobj}_y"] = y
-        df.at[row_idx, f"{player_trackobj}_track_trackobj"] = track_trackobj
-        assert player_trackobj in home_player_trackobj_list or player_trackobj in away_player_trackobj_list or player_trackobj == 55, \
-            f"{player_trackobj} missing from {sorted(home_player_trackobj_list + away_player_trackobj_list)}. {track_list}"
+        df.at[row_idx, f"{player_trackobj}_track_id"] = track_id
         if player_trackobj in home_player_trackobj_list:
             home_away_none = "home"
         elif player_trackobj in away_player_trackobj_list:
@@ -67,7 +65,7 @@ def explode_data(df: pd.DataFrame,
         df.at[row_idx, f"{player_trackobj}_homeaway"] = home_away_none
         df.at[row_idx, "player_trackobj_captured"] = list(set(player_trackobj_in_frame_list))
 
-        print(f'{track_trackobj}, {x}, {y}, {player_trackobj_in_frame_list}')
+        print(f'{track_id}, {x}, {y}, {player_trackobj_in_frame_list}')
     return df
 
 def calc_dist(x1: float,
