@@ -82,7 +82,7 @@ def explode_data(df: pd.DataFrame,
         if tracked.get("trackable_object"):
             player_id = tracked.get("trackable_object")
             if player_id == str(match_info["ball"]["trackable_object"]):
-                df.loc[row_idx, f"{player_id}_z"] = tracked.get("z")
+                df.at[row_idx, f"{player_id}_z"] = tracked.get("z")
             player_id_in_frame_list.append(player_id)
         else:
             player_id = tracked.get("group_name").replace(" ", "_").lower()
@@ -91,17 +91,17 @@ def explode_data(df: pd.DataFrame,
         y = tracked.get("y")
         track_id = tracked.get("track_id")
 
-        df.loc[row_idx, f"{player_id}_x"] = x
-        df.loc[row_idx, f"{player_id}_y"] = y
-        df.loc[row_idx, f"{player_id}_track_id"] = track_id
+        df.at[row_idx, f"{player_id}_x"] = x
+        df.at[row_idx, f"{player_id}_y"] = y
+        df.at[row_idx, f"{player_id}_track_id"] = track_id
         if player_id in home_player_id_list:
             home_away_none = "home"
         elif player_id in away_player_id_list:
             home_away_none = "away"
         else:
             home_away_none = np.nan
-        df.loc[row_idx, f"{player_id}_homeaway"] = home_away_none
-        df.loc[idx, "player_id_captured"] = list(set(player_id_in_frame_list))
+        df.at[row_idx, f"{player_id}_homeaway"] = home_away_none
+        df.at[idx, "player_id_captured"] = list(set(player_id_in_frame_list))
 
         print(f'{track_id}, {x}, {y}')
     return df
@@ -132,28 +132,28 @@ for time_idx, time in enumerate(match_struc_data_df["time"]):
     if time_idx != (total_time_record - frame_threshold):
         print(f"Frame {time_idx} / {total_time_record} @ time {time}")
         print("^" * 20)
-        player_id_in_frame_list = match_struc_data_df.loc[time_idx, "player_id_captured"]
+        player_id_in_frame_list = match_struc_data_df.at[time_idx, "player_id_captured"]
         num_players_in_frame = len(player_id_in_frame_list)
         for player_idx, player_id in enumerate(player_id_in_frame_list):
-            if player_id in match_struc_data_df.loc[time_idx + frame_threshold, "player_id_captured"]:
+            if player_id in match_struc_data_df.at[time_idx + frame_threshold, "player_id_captured"]:
                 print(f"Frame {time_idx}: Player {player_idx} / {num_players_in_frame} : {player_id}")
                 print("*" * 5)
-                x1 = match_struc_data_df.loc[time_idx, f"{player_id}_x"]
-                x2 = match_struc_data_df.loc[time_idx + frame_threshold, f"{player_id}_x"]
-                y1 = match_struc_data_df.loc[time_idx, f"{player_id}_y"]
-                y2 = match_struc_data_df.loc[time_idx + frame_threshold, f"{player_id}_y"]
+                x1 = match_struc_data_df.at[time_idx, f"{player_id}_x"]
+                x2 = match_struc_data_df.at[time_idx + frame_threshold, f"{player_id}_x"]
+                y1 = match_struc_data_df.at[time_idx, f"{player_id}_y"]
+                y2 = match_struc_data_df.at[time_idx + frame_threshold, f"{player_id}_y"]
                 distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2)
-                match_struc_data_df.loc[time_idx, f"{player_id}_dist"] = distance
+                match_struc_data_df.at[time_idx, f"{player_id}_dist"] = distance
 
-len(match_struc_data_df.loc[time_idx, "player_id_captured"])
-len(set(match_struc_data_df.loc[time_idx, "player_id_captured"]))
+len(match_struc_data_df.at[time_idx, "player_id_captured"])
+len(set(match_struc_data_df.at[time_idx, "player_id_captured"]))
 
 match_explode_data_df.columns.values
 
 match_struc_data_df["group"].value_counts()
 match_struc_data_df["time"].value_counts().sort_index()
 
-match_struc_data_df.loc[58416, "data"][0]
+match_struc_data_df.at[58416, "data"][0]
 
 match_struc_data_df[match_struc_data_df["possession_homeaway"].isna()]
 match_struc_data_df[~match_struc_data_df["possession"].isna()]
