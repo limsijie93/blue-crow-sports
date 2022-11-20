@@ -39,7 +39,7 @@ def extract_home_away_player_trackobj(match_info: dict):
 
     for player in match_info["players"]:
         player_trackobj = player["trackable_object"]
-        trackobj_mapping_dict[player_trackobj] = player["name"]
+        trackobj_mapping_dict[player_trackobj] = player["first_name"].lower() + "_" + player["last_name"].lower()
         player_team_trackobj = player["team_id"]
         if player_team_trackobj == home_team_trackobj:
             home_team_trackobj_list.append(player_trackobj)
