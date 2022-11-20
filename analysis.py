@@ -53,7 +53,7 @@ match_struc_data_df = match_struc_data_df.reset_index(drop=True)
 match_struc_data_df["data_length"] = match_struc_data_df["data"].apply(lambda x: len(x))
 match_struc_data_df["player_trackobj_captured"] = [[]] * len(match_struc_data_df)
 
-home_player_trackobj_list, away_player_trackobj_list, trackobj_mapping_dict = extract_home_away_player_trackobj(match_info=match_info_dict)
+home_player_trackobj_list, away_player_trackobj_list, player_mapping_list = extract_home_away_player_trackobj(match_info=match_info_dict)
 
 ## Explode the data column into individual column for each player using the trackable object id
 for idx, track_list in enumerate(match_struc_data_df["data"]):
@@ -213,7 +213,7 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
 
 stat_summary_df.sort_values(["speed"], ascending=False, inplace=True)
 
-pd.DataFrame.from_dict(trackobj_mapping_dict)
+pd.DataFrame(player_mapping_list.items())
 
 ##################### VISUALISATION #####################
 
