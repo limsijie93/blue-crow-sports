@@ -7,6 +7,20 @@ Github link: https://github.com/SkillCorner/opendata
 Author: @sijielim
 """
 
+##################### ASSUMPTIONS #####################
+
+## Assumptions:
+## 1. Intent of the player is not captured.
+## 2. The ball is not in every frame
+## 3. The tracking is also not continuous. Assuming
+## 4. Stationary/slow movement may not be because they are not moving fast. Maybe they are just defending
+## On-ball movement vs Off-ball movement
+## 5. There are some stoppage time moments that are also captured. In those moments, the players are moving, but they are not in a competitive mode.
+## This obscures their speed because there's no real intention to be fast.
+## Do we need to account for the focal length of the camera? Are we making too much assumptions about the data?
+## 6. Sideway movements are not well-captured
+
+
 import json
 import os
 
@@ -46,7 +60,7 @@ for match_metadata in file_df.values.tolist():
     match_struc_data_df = pd.read_json(match_structured_data_json_path)
     match_struc_data_df[["possession_player_trackobj", "possession_homeaway"]] = pd.json_normalize(match_struc_data_df["possession"])
     match_struc_data_df.drop(["possession"], axis=1, inplace=True)
-    match_struc_data_df["possession_homeaway"] = match_struc_data_df["possession_homeaway"].apply(lambda x: x.replace(" team", "") if x else x)
+    match_struc_data_df["possession_homeaway"] = match_struc_data_df["possession_homeaway"].apply(lambda x: x.replace(" ", "_") if x else x)
 
     ## There are certain frames where the group is None. Drop those rows where time == None
     match_struc_data_df = match_struc_data_df[~match_struc_data_df["time"].isna()]
@@ -233,15 +247,17 @@ for match_metadata in file_df.values.tolist():
 
 
 ##################### VISUALISATION #####################
-charts_to_plot_list = [["dist", "speed", "time"],
-                       ["dist_onball", "speed_onball", "time_onball"],
-                       ["dist_offball", "speed_offball", "time_offball"],
-                       ["dist_teampos_onball", "speed_teampos_onball", "time_teampos_onball"],
-                       ["dist_teampos_offball", "speed_teampos_offball", "time_teampos_offball"],
-                       ["dist_teamnopos_offball", "speed_teamnopos_offball", "time_teamnopos_offball"]
-                       ]
+charts_to_plot_list = []
+col_set = []
+for idx, col in enumerate(player_stat_template.keys()):
+    if idx % 3 == 0 and idx > 0:
+        charts_to_plot_list.append(col_set)
+        col_set = []
+    col_set.append(col)
 
-for x, y, z in charts_to_plot_list:
+for col_set in charts_to_plot_list:
+    x, z, y = col_set
+    print(x, y, z)
     fig = px.scatter(all_player_stat_summary_df,
                      x=x, y=y, size=z, color="team",
                      title=f"{y} (y-axis) vs {x} (x-axis)",
@@ -250,7 +266,7 @@ for x, y, z in charts_to_plot_list:
                         "name": True, "player_id": True,
                         x: True, y: True, z: True
                      })
-    fig.update_traces(textposition='center right', textfont={"size": 6})
+    fig.update_traces(textposition='middle right', textfont={"size": 6})
     fig.update_layout(hoverlabel={"bgcolor": "white",
                                   "font_size": 7})
     fig.show()
@@ -268,48 +284,3 @@ for x, y, z in charts_to_plot_list:
 #             f"{player_name} ({player_id})\n{point_y:.2f} m/s, \n{point_x:.0f} km", size=5)
 # ax.legend()
 # plt.show()
-
-##################### WORKINGS #####################
-
-
-match_player_stats_data_df["player_trackobj_captured"].sum()
-
-match_player_stats_data_df.columns.values
-
-match_player_stats_data_df.columns.values
-
-len(match_struc_data_df.at[time_idx, "player_trackobj_captured"])
-len(set(match_struc_data_df.at[time_idx, "player_trackobj_captured"]))
-match_explode_data_df.columns.values
-
-match_struc_data_df["group"].value_counts()
-match_struc_data_df["time"].value_counts().sort_index()
-
-match_struc_data_df.at[58416, "data"][0]
-
-player_trackobj = "2792"
-match_struc_data_df[~match_struc_data_df[f"{player_trackobj}_dist"].isna()][f"{player_trackobj}_dist"].sum()
-
-match_struc_data_df[match_struc_data_df["possession_homeaway"].isna()]
-match_struc_data_df[~match_struc_data_df["possession"].isna()]
-match_struc_data_df[match_struc_data_df["55_x"].isna()]
-match_struc_data_df[~match_struc_data_df["home_team_x"].isna()]
-match_struc_data_df[~match_struc_data_df["Manchester City_track_id"].isna()]
-match_struc_data_df[~match_struc_data_df["Liverpool_track_id"].isna()]
-
-
-match_info_dict.keys()
-match_info_dict["home_team"]
-match_info_dict["ball"]
-match_info_dict["players"][0]
-
-## Assumptions:
-## 1. Intent of the player is not captured.
-## 2. The ball is not in every frame
-## 3. The tracking is also not continuous. Assuming
-## 4. Stationary/slow movement may not be because they are not moving fast. Maybe they are just defending
-## On-ball movement vs Off-ball movement
-## 5. There are some stoppage time moments that are also captured. In those moments, the players are moving, but they are not in a competitive mode.
-## This obscures their speed because there's no real intention to be fast.
-## Do we need to account for the focal length of the camera? Are we making too much assumptions about the data?
-## 6. Sideway movements are not well-captured
