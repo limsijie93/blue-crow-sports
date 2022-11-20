@@ -148,7 +148,7 @@ def summarise_distance_time(df: pd.DataFrame,
     for period in [1, 2]:
         copy_df = df[df["period"] == period]
         copy_df = copy_df.reset_index()
-        total_time_record = len(df)
+        total_time_record = len(copy_df)
 
         for time_idx, time in zip(copy_df.index, copy_df["time"]):
             if time_idx < (total_time_record - frame_rate_smoothing_threshold):
