@@ -259,18 +259,17 @@ for idx, col in enumerate(player_stat_template.keys()):
 
 for col_set in charts_to_plot_list:
     x, z, y = col_set
-    print(x, y, z)
     fig = px.scatter(all_player_stat_summary_df,
                      x=x, y=y, size=z, color="team",
                      title=f"{y} (y-axis) vs {x} (x-axis)",
                      text="name",
                      hover_data={
-                        "name": True, "player_id": True,
-                        x: True, y: True, z: True
+                        "name": True, "player_id": True, "team": True,
+                        x:":.2f", y:":.2f", z:":.2f"
                      })
-    fig.update_traces(textposition='middle right', textfont={"size": 6})
+    fig.update_traces(textposition='middle right', textfont={"size": 8})
     fig.update_layout(hoverlabel={"bgcolor": "white",
-                                  "font_size": 7})
+                                  "font_size": 12})
     fig.write_html(os.path.join(OUT_DATA_DIR, f"{y}-vs-{x}.html"))
     fig.show()
 
