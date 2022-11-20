@@ -64,6 +64,12 @@ match_explode_data_df["num_player_captured"] = match_explode_data_df["player_tra
 match_explode_data_df = match_explode_data_df.reindex(
     sorted(match_explode_data_df.columns), axis=1)
 
+## There are some duplicated rows in the data. We will remove those rows
+match_explode_data_df.drop(["player_trackobj_captured", "data"], axis=1).columns.values
+match_explode_data_df.drop(["player_trackobj_captured"], axis=1).loc[0].values
+match_explode_data_df.drop(["player_trackobj_captured", "data"], axis=1).drop_duplicates()
+match_explode_data_df = match_explode_data_df.drop_duplicates()
+
 ## Summarise the distance travelled by each player from frame to frame
 FRAME_THRESHOLD = 1 # Threshold number of frames to consider as continous movement
 match_player_stats_data_df = summarise_distance_time(
@@ -213,6 +219,9 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
 
 stat_summary_df.sort_values(["speed"], ascending=False, inplace=True)
 
+stat_summary_df["time"].sum()
+match_explode_data_df[match_explode_data_df["num_player_captured"] > 0]
+
 pd.DataFrame(player_mapping_list.items())
 
 ##################### VISUALISATION #####################
@@ -230,7 +239,30 @@ plt.show()
 
 ##################### WORKINGS #####################
 
-away_player_trackobj_list
+copy_df = match_explode_data_df.copy()
+total_time_record = len(match_explode_data_df)
+
+from blue_crow_sports.utils import calc_dist
+
+for time_idx, time in enumerate(copy_df["time"]):
+    if time_idx < (total_time_record - FRAME_THRESHOLD):
+        player_trackobj_in_frame_list = copy_df.at[time_idx, "player_trackobj_captured"]
+        num_players_in_frame = len(player_trackobj_in_frame_list)
+        for player_idx, player_trackobj in enumerate(player_trackobj_in_frame_list):
+            if player_trackobj in copy_df.at[time_idx + FRAME_THRESHOLD, "player_trackobj_captured"]:
+                x1 = copy_df.at[time_idx, f"{player_trackobj}_x"]
+                x2 = copy_df.at[time_idx + FRAME_THRESHOLD, f"{player_trackobj}_x"]
+                y1 = copy_df.at[time_idx, f"{player_trackobj}_y"]
+                y2 = copy_df.at[time_idx + FRAME_THRESHOLD, f"{player_trackobj}_y"]
+                distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2) / FRAME_THRESHOLD
+                copy_df.at[time_idx, f"{player_trackobj}_dist"] = distance
+                copy_df.at[time_idx, f"{player_trackobj}_time"] = FRAME_THRESHOLD * 0.10
+
+                if x1 == np.nan or x2 == np.nan or y1 == np.nan or y2 == np.nan:
+                    print(f'{copy_df.at[time_idx, "time"]}, {copy_df.at[time_idx+FRAME_THRESHOLD, "time"]}')
+                    print(f"{time_idx} {player_trackobj}, {x1}, {x2}, {y1}, {y2}, {distance}")
+
+import numpy as np
 match_player_stats_data_df["player_trackobj_captured"].sum()
 
 match_player_stats_data_df.columns.values
