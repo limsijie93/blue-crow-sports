@@ -65,7 +65,7 @@ match_explode_data_df = match_explode_data_df.reindex(
     sorted(match_explode_data_df.columns), axis=1)
 
 ## Summarise the distance travelled by each player from frame to frame
-FRAME_THRESHOLD = 10 # Threshold number of frames to consider as continous movement
+FRAME_THRESHOLD = 1 # Threshold number of frames to consider as continous movement
 match_player_stats_data_df = summarise_distance_time(
     df=match_explode_data_df, frame_threshold=FRAME_THRESHOLD)
 match_player_stats_data_df = match_player_stats_data_df.reindex(
