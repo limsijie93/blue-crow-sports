@@ -76,13 +76,14 @@ def explode_data(df: pd.DataFrame,
     Explode the list of dictionaries that are in the "data" column in the dataframe
     """
     home_player_id_list, away_player_id_list = extract_home_away_player_id(match_info)
+    player_id_in_frame_list = []
 
     for tracked in track_list:
         if tracked.get("trackable_object"):
             player_id = tracked.get("trackable_object")
             if player_id == str(match_info["ball"]["trackable_object"]):
                 df.loc[row_idx, f"{player_id}_z"] = tracked.get("z")
-            df.loc[idx, "player_id_captured"].append(player_id)
+            player_id_in_frame_list.append(player_id)
         else:
             player_id = tracked.get("group_name").replace(" ", "_").lower()
 
@@ -100,6 +101,7 @@ def explode_data(df: pd.DataFrame,
         else:
             home_away_none = np.nan
         df.loc[row_idx, f"{player_id}_homeaway"] = home_away_none
+        df.loc[idx, "player_id_captured"] = list(set(player_id_in_frame_list))
 
         print(f'{track_id}, {x}, {y}')
     return df
