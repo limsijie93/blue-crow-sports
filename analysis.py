@@ -1,6 +1,6 @@
 """
 Init date: 17th Nov 2022
-Update date:
+Update date: 20th Nov 2022
 Description: This script is an analysis for the SkillCorner dataset found in the repo
 SkillCorner/opendata: SkillCorner Open Data with 9 matches of broadcast tracking data. (github.com)
 Github link: https://github.com/SkillCorner/opendata
@@ -75,6 +75,7 @@ match_player_stats_data_df = match_player_stats_data_df.reindex(
 ## 3. Distance when team NOT in possession: Total, Offball
 
 player_match_stat = dict(player_match_stat_template)
+stat_summary_df = pd.DataFrame()
 
 for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
     zip(home_player_trackobj_list, away_player_trackobj_list)):
@@ -130,6 +131,7 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
             #### Counter check
             assert abs(dist - dist_onball - dist_offball) <= 1, f"Distance for {player_trackobj} doesn't tally: {dist_onball} vs {dist_offball} vs {dist}"
             assert abs(time - time_onball - time_offball) <= 1, f"Time for {player_trackobj} doesn't tally: {time_onball} vs {time_offball} vs {time}"
+            # print(f"Player: {player_trackobj}. Dist: {dist}. Time {time}. Speed {dist/time}")
 
             ############################################################
 
@@ -185,22 +187,25 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
 
             # ####################################################################################
 
-            # ## 3. Calculate distance travelled when the player's team is NOT in possession
-            # #### Note: Under this scenario, player can only be offball
+            ## 3. Calculate distance travelled when the player's team is NOT in possession
+            #### Note: Under this scenario, player can only be offball
 
-            # dist_teamnopos = dist - dist_teampos
-            # time_teamnopos = time - time_teampos
-            # player_match_stat[team_pos][player_trackobj]["dist_teamnopos"] = dist_teamnopos
-            # player_match_stat[team_pos][player_trackobj]["time_teamnopos"] = time_teamnopos
-            # player_match_stat[team_pos][player_trackobj]["speed_teamnopos"] = dist_teamnopos / time_teamnopos
+            dist_teamnopos = dist - dist_teampos
+            time_teamnopos = time - time_teampos
+            player_match_stat[team_pos][player_trackobj]["dist_teamnopos"] = dist_teamnopos
+            player_match_stat[team_pos][player_trackobj]["time_teamnopos"] = time_teamnopos
+            player_match_stat[team_pos][player_trackobj]["speed_teamnopos"] = dist_teamnopos / time_teamnopos
 
-            # player_match_stat[team_pos][player_trackobj]["dist_teamnopos_offball"] = dist_teamnopos
-            # player_match_stat[team_pos][player_trackobj]["time_teamnopos_offball"] = time_teamnopos
-            # player_match_stat[team_pos][player_trackobj]["speed_teamnopos_offball"] = dist_teamnopos / time_teamnopos
+            player_match_stat[team_pos][player_trackobj]["dist_teamnopos_offball"] = dist_teamnopos
+            player_match_stat[team_pos][player_trackobj]["time_teamnopos_offball"] = time_teamnopos
+            player_match_stat[team_pos][player_trackobj]["speed_teamnopos_offball"] = dist_teamnopos / time_teamnopos
+
+            assert  dist == dist_teamnopos + dist_teampos, "Distance when team not in posession is wrong"
+            assert  time == time_teamnopos + time_teampos, "Time when team not in posession is wrong"
             # ############################################################
 
-
-
+            stat_summary_df = stat_summary_df.append(
+                pd.DataFrame(player_match_stat[team_pos][player_trackobj], index=[player_trackobj]))
 
 
 ##################### WORKINGS #####################
