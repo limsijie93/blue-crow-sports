@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 
 player_match_stat_template = {
-    "home": {},
-    "away": {}
+    "home_team": {},
+    "away_team": {}
 }
 
 player_stat_template = {
@@ -89,9 +89,9 @@ def explode_data(df: pd.DataFrame,
         df.at[row_idx, f"{player_trackobj}_y"] = y
         df.at[row_idx, f"{player_trackobj}_track_id"] = track_id
         if player_trackobj in home_player_trackobj_list:
-            home_away_none = "home"
+            home_away_none = "home_team"
         elif player_trackobj in away_player_trackobj_list:
-            home_away_none = "away"
+            home_away_none = "away_team"
         else:
             home_away_none = np.nan
         df.at[row_idx, f"{player_trackobj}_homeaway"] = home_away_none
@@ -118,6 +118,14 @@ def calc_dist(x1: float,
     """
     distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
     return distance
+
+def get_team_name(team: str,
+                  match_info: dict):
+    """
+    Convert string of home_team / away_team to actual name of the team
+    """
+    assert team in ["home_team", "away_team"], f'{team} not in ["hohome_teamme", "away_team"]'
+    return match_info[team]["short_name"].lower().replace(" ", "_")
 
 def summarise_distance_time(df: pd.DataFrame,
                             frame_rate_smoothing_threshold: int=10,
