@@ -145,6 +145,10 @@ for time_idx, time in enumerate(match_struc_data_df["time"]):
                 distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2)
                 match_struc_data_df.at[time_idx, f"{player_id}_dist"] = distance
 
+
+
+##################### WORKINGS #####################
+
 len(match_struc_data_df.at[time_idx, "player_id_captured"])
 len(set(match_struc_data_df.at[time_idx, "player_id_captured"]))
 match_explode_data_df.columns.values
@@ -153,6 +157,9 @@ match_struc_data_df["group"].value_counts()
 match_struc_data_df["time"].value_counts().sort_index()
 
 match_struc_data_df.at[58416, "data"][0]
+
+player_id = "2792"
+match_struc_data_df[~match_struc_data_df[f"{player_id}_dist"].isna()][f"{player_id}_dist"].sum()
 
 match_struc_data_df[match_struc_data_df["possession_homeaway"].isna()]
 match_struc_data_df[~match_struc_data_df["possession"].isna()]
