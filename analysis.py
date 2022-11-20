@@ -38,8 +38,10 @@ from blue_crow_sports.utils import (explode_data,
 load_dotenv("blue_crow_sports/.env")
 
 ROOT = os.getenv("ROOT")
-DATA_DIR = os.path.join(ROOT, "opendata", "data")
-INPUT_JSON_PATH = os.path.join(DATA_DIR, "matches.json")
+IN_DATA_DIR = os.path.join(ROOT, "opendata", "data")
+INPUT_JSON_PATH = os.path.join(IN_DATA_DIR, "matches.json")
+OUT_DATA_DIR = os.path.join(ROOT, "blue_crow_sports", "plotly")
+os.makedirs(OUT_DATA_DIR, exist_ok=True)
 
 file_df = pd.read_json(INPUT_JSON_PATH)
 
@@ -269,7 +271,9 @@ for col_set in charts_to_plot_list:
     fig.update_traces(textposition='middle right', textfont={"size": 6})
     fig.update_layout(hoverlabel={"bgcolor": "white",
                                   "font_size": 7})
+    fig.write_html(os.path.join(OUT_DATA_DIR, f"{y}-vs-{x}.html"))
     fig.show()
+
 
 ##################### CHARTS (WORKINGS) #####################
 
