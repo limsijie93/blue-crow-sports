@@ -133,7 +133,10 @@ def summarise_distance_time(df: pd.DataFrame,
                 player_trackobj_in_frame_list = copy_df.at[time_idx, "player_trackobj_captured"]
                 num_players_in_frame = len(player_trackobj_in_frame_list)
                 for player_idx, player_trackobj in enumerate(player_trackobj_in_frame_list):
-                    if player_trackobj in copy_df.at[time_idx + frame_threshold, "player_trackobj_captured"]:
+                    current_track_id = copy_df.at[time_idx, f"{player_trackobj}_track_id"]
+                    forward_track_id = copy_df.at[time_idx + frame_threshold, f"{player_trackobj}_track_id"]
+                    if (player_trackobj in copy_df.at[time_idx + frame_threshold, "player_trackobj_captured"]) & \
+                        (current_track_id == forward_track_id):
                         print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_trackobj}")
                         print("*" * 5)
                         x1 = copy_df.at[time_idx, f"{player_trackobj}_x"]

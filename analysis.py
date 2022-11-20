@@ -75,6 +75,9 @@ match_player_stats_data_df = summarise_distance_time(
 match_player_stats_data_df = match_player_stats_data_df.reindex(
     sorted(match_player_stats_data_df.columns), axis=1)
 
+player_id = "10748"
+match_player_stats_data_df[~match_player_stats_data_df[f"{player_id}_dist"].isna()].iloc[:50]
+match_player_stats_data_df.columns.values
 
 ## Calculate:
 ## 1. Distance: Total, Onball, Offball
