@@ -228,7 +228,7 @@ for match_metadata in file_df.values.tolist():
 
     player_stats_summary_df["team"] = player_stats_summary_df["team"].apply(get_team_name, match_info=match_info_dict)
 
-    all_player_stat_summary_df = pd.concat([all_player_stat_summary_df, player_stats_summary_df], axis=0).reset_index()
+    all_player_stat_summary_df = pd.concat([all_player_stat_summary_df, player_stats_summary_df], axis=0).reset_index(drop=True)
     print(f"*" * 50)
 
 

@@ -179,6 +179,6 @@ def summarise_distance_time(df: pd.DataFrame,
                         distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2) / frame_rate_smoothing_threshold
                         copy_df.at[time_idx, f"{player_trackobj}_dist"] = distance
                         copy_df.at[time_idx, f"{player_trackobj}_time"] = time_per_frame_rate
-        summary_df = pd.concat([summary_df, copy_df], axis=0).reset_index()
+        summary_df = pd.concat([summary_df, copy_df], axis=0).reset_index(drop=True)
 
     return summary_df
