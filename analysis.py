@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 from blue_crow_sports.utils import explode_data, extract_home_away_player_id
 
-load_dotenv("blue-crow-sports/.env")
+load_dotenv("blue_crow_sports/.env")
 
 ROOT = os.getenv("ROOT")
 DATA_DIR = os.path.join(ROOT, "opendata", "data")
@@ -101,9 +101,9 @@ def explode_data(df: pd.DataFrame,
         else:
             home_away_none = np.nan
         df.at[row_idx, f"{player_id}_homeaway"] = home_away_none
-        df.at[idx, "player_id_captured"] = list(set(player_id_in_frame_list))
+        df.at[row_idx, "player_id_captured"] = list(set(player_id_in_frame_list))
 
-        print(f'{track_id}, {x}, {y}')
+        print(f'{track_id}, {x}, {y}, {player_id_in_frame_list}')
     return df
 
 def calc_dist(x1: float,
@@ -136,7 +136,7 @@ for time_idx, time in enumerate(match_struc_data_df["time"]):
         num_players_in_frame = len(player_id_in_frame_list)
         for player_idx, player_id in enumerate(player_id_in_frame_list):
             if player_id in match_struc_data_df.at[time_idx + frame_threshold, "player_id_captured"]:
-                print(f"Frame {time_idx}: Player {player_idx} / {num_players_in_frame} : {player_id}")
+                print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_id}")
                 print("*" * 5)
                 x1 = match_struc_data_df.at[time_idx, f"{player_id}_x"]
                 x2 = match_struc_data_df.at[time_idx + frame_threshold, f"{player_id}_x"]
@@ -147,7 +147,6 @@ for time_idx, time in enumerate(match_struc_data_df["time"]):
 
 len(match_struc_data_df.at[time_idx, "player_id_captured"])
 len(set(match_struc_data_df.at[time_idx, "player_id_captured"]))
-
 match_explode_data_df.columns.values
 
 match_struc_data_df["group"].value_counts()
