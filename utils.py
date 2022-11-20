@@ -1,6 +1,6 @@
 """
 Init date: 17th Nov 2022
-Update date: 19th Nov 2022
+Update date: 20th Nov 2022
 Description: This script is for the utility functions used in the analysis for SkillCorner dataset found in the repo
 SkillCorner/opendata: SkillCorner Open Data with 9 matches of broadcast tracking data. (github.com)
 Github link: https://github.com/SkillCorner/opendata
