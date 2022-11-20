@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 
-from blue_crow_sports.utils import explode_data, extract_home_away_player_id
+from blue_crow_sports.utils import explode_data, summarise_distance_time
 
 load_dotenv("blue_crow_sports/.env")
 
@@ -51,71 +51,6 @@ match_struc_data_df = match_struc_data_df.reset_index(drop=True)
 match_struc_data_df["data_length"] = match_struc_data_df["data"].apply(lambda x: len(x))
 match_struc_data_df["player_id_captured"] = [[]] * len(match_struc_data_df)
 
-def extract_home_away_player_id(match_info: dict):
-    """
-    Function to extract a list of the player ids and
-    whether they belong to the home or away team
-    """
-    home_team_id_list, away_team_id_list = [], []
-    home_team_id = match_info["home_team"]["id"]
-    away_team_id = match_info["away_team"]["id"]
-
-    for player in match_info["players"]:
-        player_id = player["id"]
-        if player_id == home_team_id:
-            home_team_id_list.append(player_id)
-        elif player_id == away_team_id:
-            away_team_id_list.append(player_id)
-    return home_team_id_list, away_team_id_list
-
-def explode_data(df: pd.DataFrame,
-                 match_info: dict,
-                 row_idx: int,
-                 track_list: list):
-    """
-    Explode the list of dictionaries that are in the "data" column in the dataframe
-    """
-    home_player_id_list, away_player_id_list = extract_home_away_player_id(match_info)
-    player_id_in_frame_list = []
-
-    for tracked in track_list:
-        if tracked.get("trackable_object"):
-            player_id = tracked.get("trackable_object")
-            if player_id == str(match_info["ball"]["trackable_object"]):
-                df.at[row_idx, f"{player_id}_z"] = tracked.get("z")
-            player_id_in_frame_list.append(player_id)
-        else:
-            player_id = tracked.get("group_name").replace(" ", "_").lower()
-
-        x = tracked.get("x")
-        y = tracked.get("y")
-        track_id = tracked.get("track_id")
-
-        df.at[row_idx, f"{player_id}_x"] = x
-        df.at[row_idx, f"{player_id}_y"] = y
-        df.at[row_idx, f"{player_id}_track_id"] = track_id
-        if player_id in home_player_id_list:
-            home_away_none = "home"
-        elif player_id in away_player_id_list:
-            home_away_none = "away"
-        else:
-            home_away_none = np.nan
-        df.at[row_idx, f"{player_id}_homeaway"] = home_away_none
-        df.at[row_idx, "player_id_captured"] = list(set(player_id_in_frame_list))
-
-        print(f'{track_id}, {x}, {y}, {player_id_in_frame_list}')
-    return df
-
-def calc_dist(x1: float,
-              y1: float,
-              x2: float,
-              y2: float):
-    """
-    Function to calculated the distance travelled from frame to frame based on
-    """
-    distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
-    return distance
-
 ## Processing using a list comprehension to run it faster
 for idx, track_list in enumerate(match_struc_data_df["data"]):
     match_explode_data_df = explode_data(df=match_struc_data_df,
@@ -127,40 +62,8 @@ match_explode_data_df = match_explode_data_df.reindex(
 
 frame_threshold = 10 # Threshold number of frames to consider as continous movement
 
-def summarise_distance_time(df: pd.DataFrame,
-                            frame_threshold: int=10):
-    """
-    Summarise the distance ran by the player on a frame to frame basis
-    Setting the default frame_threshold to be 10
 
-    Returns:
-        Copy of the input dataframe with the following additional columns:
-            1. {player_id}_dist: Distance travelled
-            2. {player_id}_time: Number of seconds travelled
-    """
-    copy_df = df.copy()
-    total_time_record = len(df)
-
-    for time_idx, time in enumerate(copy_df["time"]):
-        if time_idx < (total_time_record - frame_threshold):
-            print(f"Frame {time_idx} / {total_time_record} @ time {time}")
-            print("^" * 20)
-            player_id_in_frame_list = copy_df.at[time_idx, "player_id_captured"]
-            num_players_in_frame = len(player_id_in_frame_list)
-            for player_idx, player_id in enumerate(player_id_in_frame_list):
-                if player_id in copy_df.at[time_idx + frame_threshold, "player_id_captured"]:
-                    print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_id}")
-                    print("*" * 5)
-                    x1 = copy_df.at[time_idx, f"{player_id}_x"]
-                    x2 = copy_df.at[time_idx + frame_threshold, f"{player_id}_x"]
-                    y1 = copy_df.at[time_idx, f"{player_id}_y"]
-                    y2 = copy_df.at[time_idx + frame_threshold, f"{player_id}_y"]
-                    distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2)
-                    copy_df.at[time_idx, f"{player_id}_dist"] = distance
-                    copy_df.at[time_idx, f"{player_id}_time"] = frame_threshold * 0.10
-    return copy_df
-
-match_player_stats_data_df = summarise_player_distance_time(df=match_explode_data_df, frame_threshold=10)
+match_player_stats_data_df = summarise_distance_time(df=match_explode_data_df, frame_threshold=10)
 match_player_stats_data_df = match_player_stats_data_df.reindex(
     sorted(match_player_stats_data_df.columns), axis=1)
 

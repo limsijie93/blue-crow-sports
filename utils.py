@@ -7,6 +7,8 @@ Github link: https://github.com/SkillCorner/opendata
 Author: @sijielim
 """
 
+import math
+import numpy as np
 import pandas as pd
 
 def extract_home_away_player_id(match_info: dict):
@@ -33,17 +35,76 @@ def explode_data(df: pd.DataFrame,
     """
     Explode the list of dictionaries that are in the "data" column in the dataframe
     """
+    home_player_id_list, away_player_id_list = extract_home_away_player_id(match_info)
+    player_id_in_frame_list = []
+
     for tracked in track_list:
         if tracked.get("trackable_object"):
-            track_obj = tracked.get("trackable_object")
-            if track_obj == str(match_info["ball"]["trackable_object"]):
-                df.loc[row_idx, f"{track_obj}_z"] = tracked.get("z")
+            player_id = tracked.get("trackable_object")
+            if player_id == str(match_info["ball"]["trackable_object"]):
+                df.at[row_idx, f"{player_id}_z"] = tracked.get("z")
+            player_id_in_frame_list.append(player_id)
         else:
-            track_obj = tracked.get("group_name").replace(" ", "_").lower()
+            player_id = tracked.get("group_name").replace(" ", "_").lower()
 
-        df.loc[row_idx, f"{track_obj}_x"] = tracked.get("x")
-        df.loc[row_idx, f"{track_obj}_y"] = tracked.get("y")
-        df.loc[row_idx, f"{track_obj}_track_id"] = tracked.get("track_id")
+        x = tracked.get("x")
+        y = tracked.get("y")
+        track_id = tracked.get("track_id")
 
-        print(f'{df.loc[row_idx, f"{track_obj}_track_id"]}, {df.loc[row_idx, f"{track_obj}_x"]}, {df.loc[row_idx, f"{track_obj}_y"]}')
+        df.at[row_idx, f"{player_id}_x"] = x
+        df.at[row_idx, f"{player_id}_y"] = y
+        df.at[row_idx, f"{player_id}_track_id"] = track_id
+        if player_id in home_player_id_list:
+            home_away_none = "home"
+        elif player_id in away_player_id_list:
+            home_away_none = "away"
+        else:
+            home_away_none = np.nan
+        df.at[row_idx, f"{player_id}_homeaway"] = home_away_none
+        df.at[row_idx, "player_id_captured"] = list(set(player_id_in_frame_list))
+
+        print(f'{track_id}, {x}, {y}, {player_id_in_frame_list}')
     return df
+
+def calc_dist(x1: float,
+              y1: float,
+              x2: float,
+              y2: float):
+    """
+    Function to calculated the distance travelled from frame to frame based on
+    """
+    distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+    return distance
+
+def summarise_distance_time(df: pd.DataFrame,
+                            frame_threshold: int=10):
+    """
+    Summarise the distance ran by the player on a frame to frame basis
+    Setting the default frame_threshold to be 10
+
+    Returns:
+        Copy of the input dataframe with the following additional columns:
+            1. {player_id}_dist: Distance travelled
+            2. {player_id}_time: Number of seconds travelled
+    """
+    copy_df = df.copy()
+    total_time_record = len(df)
+
+    for time_idx, time in enumerate(copy_df["time"]):
+        if time_idx < (total_time_record - frame_threshold):
+            print(f"Frame {time_idx} / {total_time_record} @ time {time}")
+            print("^" * 20)
+            player_id_in_frame_list = copy_df.at[time_idx, "player_id_captured"]
+            num_players_in_frame = len(player_id_in_frame_list)
+            for player_idx, player_id in enumerate(player_id_in_frame_list):
+                if player_id in copy_df.at[time_idx + frame_threshold, "player_id_captured"]:
+                    print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_id}")
+                    print("*" * 5)
+                    x1 = copy_df.at[time_idx, f"{player_id}_x"]
+                    x2 = copy_df.at[time_idx + frame_threshold, f"{player_id}_x"]
+                    y1 = copy_df.at[time_idx, f"{player_id}_y"]
+                    y2 = copy_df.at[time_idx + frame_threshold, f"{player_id}_y"]
+                    distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2)
+                    copy_df.at[time_idx, f"{player_id}_dist"] = distance
+                    copy_df.at[time_idx, f"{player_id}_time"] = frame_threshold * 0.10
+    return copy_df
