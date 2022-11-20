@@ -261,6 +261,8 @@ for idx, col in enumerate(player_stat_template.keys()):
         col_set = []
     col_set.append(col)
 
+## NOTE: As some players played 2 matches, we will find the average distance they covered across the 2 matches
+## The code below is to account for such cases
 dedup_player_stat_summary_df = all_player_stat_summary_df.groupby(["player_id", "name", "team"]).sum().reset_index()
 match_per_player_df = all_player_stat_summary_df.groupby(["player_id", "name", "team"])["dist"].count().reset_index()
 match_per_player_df.rename(columns={"dist": "match_count"}, inplace=True)
@@ -272,6 +274,7 @@ for col_set in charts_to_plot_list:
     dedup_player_stat_summary_df[dist] = dedup_player_stat_summary_df[dist] / dedup_player_stat_summary_df["match_count"]
     dedup_player_stat_summary_df[time] = dedup_player_stat_summary_df[time] / dedup_player_stat_summary_df["match_count"]
     dedup_player_stat_summary_df[speed] = dedup_player_stat_summary_df[dist] / dedup_player_stat_summary_df[time]
+
 
 ##################### VISUALISATION #####################
 for col_set in charts_to_plot_list:
