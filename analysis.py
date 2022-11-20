@@ -7,6 +7,7 @@ Github link: https://github.com/SkillCorner/opendata
 Author: @sijielim
 """
 
+import math
 import json
 import os
 
@@ -47,10 +48,8 @@ match_struc_data_df["possession_homeaway"] = match_struc_data_df["possession_hom
 match_struc_data_df = match_struc_data_df[~match_struc_data_df["time"].isna()]
 match_struc_data_df = match_struc_data_df.reset_index(drop=True)
 
-match_struc_data_df["group"] = match_struc_data_df["group"].replace("home team", home_team)
-match_struc_data_df["group"] = match_struc_data_df["group"].replace("away team", away_team)
-
 match_struc_data_df["data_length"] = match_struc_data_df["data"].apply(lambda x: len(x))
+match_struc_data_df["player_id_captured"] = [[]] * len(match_struc_data_df)
 
 def extract_home_away_player_id(match_info: dict):
     """
@@ -83,6 +82,7 @@ def explode_data(df: pd.DataFrame,
             player_id = tracked.get("trackable_object")
             if player_id == str(match_info["ball"]["trackable_object"]):
                 df.loc[row_idx, f"{player_id}_z"] = tracked.get("z")
+            df.loc[idx, "player_id_captured"].append(player_id)
         else:
             player_id = tracked.get("group_name").replace(" ", "_").lower()
 
@@ -104,14 +104,47 @@ def explode_data(df: pd.DataFrame,
         print(f'{track_id}, {x}, {y}')
     return df
 
+def calc_dist(x1: float,
+              y1: float,
+              x2: float,
+              y2: float):
+    """
+    Function to calculated the distance travelled from frame to frame based on
+    """
+    distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+    return distance
 
 ## Processing using a list comprehension to run it faster
 for idx, track_list in enumerate(match_struc_data_df["data"]):
     match_explode_data_df = explode_data(df=match_struc_data_df,
                                          match_info=match_info_dict,
                                          row_idx=idx, track_list=track_list)
+match_explode_data_df["num_player_captured"] = match_explode_data_df["player_id_captured"].apply(lambda x: len(x))
 match_explode_data_df = match_explode_data_df.reindex(
     sorted(match_explode_data_df.columns), axis=1)
+
+total_time_record = len(match_struc_data_df)
+frame_threshold = 10 # Threshold number of frames to consider as continous movement
+
+for time_idx, time in enumerate(match_struc_data_df["time"]):
+    if time_idx != (total_time_record - frame_threshold):
+        print(f"Frame {time_idx} / {total_time_record} @ time {time}")
+        print("^" * 20)
+        player_id_in_frame_list = match_struc_data_df.loc[time_idx, "player_id_captured"]
+        num_players_in_frame = len(player_id_in_frame_list)
+        for player_idx, player_id in enumerate(player_id_in_frame_list):
+            if player_id in match_struc_data_df.loc[time_idx + frame_threshold, "player_id_captured"]:
+                print(f"Frame {time_idx}: Player {player_idx} / {num_players_in_frame} : {player_id}")
+                print("*" * 5)
+                x1 = match_struc_data_df.loc[time_idx, f"{player_id}_x"]
+                x2 = match_struc_data_df.loc[time_idx + frame_threshold, f"{player_id}_x"]
+                y1 = match_struc_data_df.loc[time_idx, f"{player_id}_y"]
+                y2 = match_struc_data_df.loc[time_idx + frame_threshold, f"{player_id}_y"]
+                distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2)
+                match_struc_data_df.loc[time_idx, f"{player_id}_dist"] = distance
+
+len(match_struc_data_df.loc[time_idx, "player_id_captured"])
+len(set(match_struc_data_df.loc[time_idx, "player_id_captured"]))
 
 match_explode_data_df.columns.values
 
@@ -119,6 +152,8 @@ match_struc_data_df["group"].value_counts()
 match_struc_data_df["time"].value_counts().sort_index()
 
 match_struc_data_df.loc[58416, "data"][0]
+
+match_struc_data_df[match_struc_data_df["possession_homeaway"].isna()]
 match_struc_data_df[~match_struc_data_df["possession"].isna()]
 match_struc_data_df[match_struc_data_df["55_x"].isna()]
 match_struc_data_df[~match_struc_data_df["home_team_x"].isna()]
