@@ -142,7 +142,7 @@ def summarise_player_distance_time(df: pd.DataFrame,
     total_time_record = len(df)
 
     for time_idx, time in enumerate(copy_df["time"]):
-        if time_idx < (total_time_record - frame_threshold + 1):
+        if time_idx < (total_time_record - frame_threshold):
             print(f"Frame {time_idx} / {total_time_record} @ time {time}")
             print("^" * 20)
             player_id_in_frame_list = copy_df.at[time_idx, "player_id_captured"]
@@ -160,6 +160,7 @@ def summarise_player_distance_time(df: pd.DataFrame,
                     copy_df.at[time_idx, f"{player_id}_time"] = frame_threshold * 0.10
     return copy_df
 
+match_player_stats_data_df = summarise_player_distance_time(df=match_explode_data_df, frame_threshold=10)
 
 ##################### WORKINGS #####################
 
