@@ -11,23 +11,23 @@ import math
 import numpy as np
 import pandas as pd
 
-def extract_home_away_player_id(match_info: dict):
+def extract_home_away_player_trackobj(match_info: dict):
     """
     Function to extract a list of the player ids and
     whether they belong to the home or away team
     """
-    home_team_id_list, away_team_id_list = [], []
-    home_team_id = match_info["home_team"]["id"]
-    away_team_id = match_info["away_team"]["id"]
+    home_team_trackobj_list, away_team_trackobj_list = [], []
+    home_team_trackobj = match_info["home_team"]["id"]
+    away_team_trackobj = match_info["away_team"]["id"]
 
     for player in match_info["players"]:
-        player_id = player["id"]
-        player_team_id = player["team_id"]
-        if player_team_id == home_team_id:
-            home_team_id_list.append(player_id)
-        elif player_team_id == away_team_id:
-            away_team_id_list.append(player_id)
-    return home_team_id_list, away_team_id_list
+        player_trackobj = player["id"]
+        player_team_trackobj = player["team_trackobj"]
+        if player_team_trackobj == home_team_trackobj:
+            home_team_trackobj_list.append(player_trackobj)
+        elif player_team_trackobj == away_team_trackobj:
+            away_team_trackobj_list.append(player_trackobj)
+    return home_team_trackobj_list, away_team_trackobj_list
 
 def explode_data(df: pd.DataFrame,
                  match_info: dict,
@@ -36,35 +36,38 @@ def explode_data(df: pd.DataFrame,
     """
     Explode the list of dictionaries that are in the "data" column in the dataframe
     """
-    home_player_id_list, away_player_id_list = extract_home_away_player_id(match_info)
-    player_id_in_frame_list = []
+    home_player_trackobj_list, away_player_trackobj_list = extract_home_away_player_trackobj(match_info)
+    full_player_trackobj_list = sorted(home_player_trackobj_list + away_player_trackobj_list)
+    player_trackobj_in_frame_list = []
 
     for tracked in track_list:
-        if tracked.get("trackable_object"):
-            player_id = tracked.get("trackable_object")
-            if player_id == str(match_info["ball"]["trackable_object"]):
-                df.at[row_idx, f"{player_id}_z"] = tracked.get("z")
-            player_id_in_frame_list.append(player_id)
-        else:
-            player_id = tracked.get("group_name").replace(" ", "_").lower()
+        player_trackobj = tracked.get("trackable_object")
+        if player_trackobj in full_player_trackobj_list:
+            if player_trackobj == str(match_info["ball"]["trackable_object"]):
+                df.at[row_idx, f"{player_trackobj}_z"] = tracked.get("z")
+            player_trackobj_in_frame_list.append(player_trackobj)
+        elif not player_trackobj:
+            player_trackobj = tracked.get("group_name").replace(" ", "_").lower()
 
         x = tracked.get("x")
         y = tracked.get("y")
-        track_id = tracked.get("track_id")
+        track_trackobj = tracked.get("track_trackobj")
 
-        df.at[row_idx, f"{player_id}_x"] = x
-        df.at[row_idx, f"{player_id}_y"] = y
-        df.at[row_idx, f"{player_id}_track_id"] = track_id
-        if player_id in home_player_id_list:
+        df.at[row_idx, f"{player_trackobj}_x"] = x
+        df.at[row_idx, f"{player_trackobj}_y"] = y
+        df.at[row_idx, f"{player_trackobj}_track_trackobj"] = track_trackobj
+        assert player_trackobj in home_player_trackobj_list or player_trackobj in away_player_trackobj_list or player_trackobj == 55, \
+            f"{player_trackobj} missing from {sorted(home_player_trackobj_list + away_player_trackobj_list)}. {track_list}"
+        if player_trackobj in home_player_trackobj_list:
             home_away_none = "home"
-        elif player_id in away_player_id_list:
+        elif player_trackobj in away_player_trackobj_list:
             home_away_none = "away"
         else:
             home_away_none = np.nan
-        df.at[row_idx, f"{player_id}_homeaway"] = home_away_none
-        df.at[row_idx, "player_id_captured"] = list(set(player_id_in_frame_list))
+        df.at[row_idx, f"{player_trackobj}_homeaway"] = home_away_none
+        df.at[row_idx, "player_trackobj_captured"] = list(set(player_trackobj_in_frame_list))
 
-        print(f'{track_id}, {x}, {y}, {player_id_in_frame_list}')
+        print(f'{track_trackobj}, {x}, {y}, {player_trackobj_in_frame_list}')
     return df
 
 def calc_dist(x1: float,
@@ -85,8 +88,8 @@ def summarise_distance_time(df: pd.DataFrame,
 
     Returns:
         Copy of the input dataframe with the following additional columns:
-            1. {player_id}_dist: Distance travelled
-            2. {player_id}_time: Number of seconds travelled
+            1. {player_trackobj}_dist: Distance travelled
+            2. {player_trackobj}_time: Number of seconds travelled
     """
     copy_df = df.copy()
     total_time_record = len(df)
@@ -95,17 +98,17 @@ def summarise_distance_time(df: pd.DataFrame,
         if time_idx < (total_time_record - frame_threshold):
             print(f"Frame {time_idx} / {total_time_record} @ time {time}")
             print("^" * 20)
-            player_id_in_frame_list = copy_df.at[time_idx, "player_id_captured"]
-            num_players_in_frame = len(player_id_in_frame_list)
-            for player_idx, player_id in enumerate(player_id_in_frame_list):
-                if player_id in copy_df.at[time_idx + frame_threshold, "player_id_captured"]:
-                    print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_id}")
+            player_trackobj_in_frame_list = copy_df.at[time_idx, "player_trackobj_captured"]
+            num_players_in_frame = len(player_trackobj_in_frame_list)
+            for player_idx, player_trackobj in enumerate(player_trackobj_in_frame_list):
+                if player_trackobj in copy_df.at[time_idx + frame_threshold, "player_trackobj_captured"]:
+                    print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_trackobj}")
                     print("*" * 5)
-                    x1 = copy_df.at[time_idx, f"{player_id}_x"]
-                    x2 = copy_df.at[time_idx + frame_threshold, f"{player_id}_x"]
-                    y1 = copy_df.at[time_idx, f"{player_id}_y"]
-                    y2 = copy_df.at[time_idx + frame_threshold, f"{player_id}_y"]
+                    x1 = copy_df.at[time_idx, f"{player_trackobj}_x"]
+                    x2 = copy_df.at[time_idx + frame_threshold, f"{player_trackobj}_x"]
+                    y1 = copy_df.at[time_idx, f"{player_trackobj}_y"]
+                    y2 = copy_df.at[time_idx + frame_threshold, f"{player_trackobj}_y"]
                     distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2)
-                    copy_df.at[time_idx, f"{player_id}_dist"] = distance
-                    copy_df.at[time_idx, f"{player_id}_time"] = frame_threshold * 0.10
+                    copy_df.at[time_idx, f"{player_trackobj}_dist"] = distance
+                    copy_df.at[time_idx, f"{player_trackobj}_time"] = frame_threshold * 0.10
     return copy_df

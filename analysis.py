@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 
-from blue_crow_sports.utils import explode_data, summarise_distance_time, extract_home_away_player_id
+from blue_crow_sports.utils import explode_data, summarise_distance_time, extract_home_away_player_trackobj
 
 load_dotenv("blue_crow_sports/.env")
 
@@ -38,7 +38,7 @@ match_structured_data_json_path = os.path.join(match_data_dir, "structured_data.
 with open(match_data_json_path, "r") as f:
     match_info_dict = json.load(f)
 match_struc_data_df = pd.read_json(match_structured_data_json_path)
-match_struc_data_df[["possession_player_id", "possession_homeaway"]
+match_struc_data_df[["possession_player_trackobj", "possession_homeaway"]
                     ] = pd.json_normalize(match_struc_data_df["possession"])
 match_struc_data_df.drop(["possession"], axis=1, inplace=True)
 match_struc_data_df["possession_homeaway"] = match_struc_data_df["possession_homeaway"].apply(
@@ -49,15 +49,15 @@ match_struc_data_df = match_struc_data_df[~match_struc_data_df["time"].isna()]
 match_struc_data_df = match_struc_data_df.reset_index(drop=True)
 
 match_struc_data_df["data_length"] = match_struc_data_df["data"].apply(lambda x: len(x))
-match_struc_data_df["player_id_captured"] = [[]] * len(match_struc_data_df)
+match_struc_data_df["player_trackobj_captured"] = [[]] * len(match_struc_data_df)
 
-home_player_id_list, away_player_id_list = extract_home_away_player_id(match_info=match_info_dict)
+home_player_trackobj_list, away_player_trackobj_list = extract_home_away_player_trackobj(match_info=match_info_dict)
 
 for idx, track_list in enumerate(match_struc_data_df["data"]):
     match_explode_data_df = explode_data(df=match_struc_data_df,
                                          match_info=match_info_dict,
                                          row_idx=idx, track_list=track_list)
-match_explode_data_df["num_player_captured"] = match_explode_data_df["player_id_captured"].apply(lambda x: len(x))
+match_explode_data_df["num_player_captured"] = match_explode_data_df["player_trackobj_captured"].apply(lambda x: len(x))
 match_explode_data_df = match_explode_data_df.reindex(
     sorted(match_explode_data_df.columns), axis=1)
 
@@ -67,19 +67,47 @@ match_player_stats_data_df = summarise_distance_time(df=match_explode_data_df, f
 match_player_stats_data_df = match_player_stats_data_df.reindex(
     sorted(match_player_stats_data_df.columns), axis=1)
 
+# TODO:
+# match_player_stats_data_df["8039_homeaway"].unique()
+# 8039 in away_player_trackobj_list
+# 8039 in home_player_trackobj_list
+# for player in match_info_dict["players"]:
+#     print(player["id"])
 
-for home_player_idx, home_player_id in enumerate(home_player_id_list):
-    match_player_stats_data_df[match_player_stats_data_df[f"{home_player_id}_dist"]]
-away_player_id_list
+for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
+    zip(home_player_trackobj_list, away_player_trackobj_list)):
+    if f"{home_player_trackobj}_dist" in match_player_stats_data_df.columns:
+        print(f"Process player_trackobj: {home_player_trackobj}")
+        player_match_info_df = match_player_stats_data_df[
+            ~match_player_stats_data_df[f"{home_player_trackobj}_dist"].isna()]
+        player_match_info_df["home_possession"] = player_match_info_df["possession_homeaway"].apply(
+            lambda x: 1 if x == "home" else 0)
+        player_match_info_df[f"{home_player_trackobj}_home"] = player_match_info_df[f"{home_player_trackobj}_homeaway"].apply(
+            lambda x: 1 if x == "home" else 0)
+        player_match_info_df[f"{home_player_trackobj}_dist_home"] = player_match_info_df["home_possession"] * \
+            player_match_info_df[f"{home_player_trackobj}_home"] * player_match_info_df[f"{home_player_trackobj}_dist"]
+        player_match_info_df[f"{home_player_trackobj}_time_home"] = player_match_info_df["home_possession"] * \
+            player_match_info_df[f"{home_player_trackobj}_home"] * player_match_info_df[f"{home_player_trackobj}_time"]
 
-match_player_stats_data_df
+        player_match_info_df[f"{home_player_trackobj}_homeaway"]
+    # if f"{away_player_trackobj}_dist" in match_player_stats_data_df.columns:
+    #     print(f"Process player_trackobj: {away_player_trackobj}")
+    #     player_match_info_df = match_player_stats_data_df[
+    #         ~match_player_stats_data_df[f"{home_player_trackobj}_dist"].isna()]
+    # else:
+    #     print(f"Skipping {player_trackobj} as player wasn't used in the game")
+
+away_player_trackobj_list
+match_player_stats_data_df["player_trackobj_captured"].sum()
+
+match_player_stats_data_df.columns.values
 
 ##################### WORKINGS #####################
 
 match_player_stats_data_df.columns.values
 
-len(match_struc_data_df.at[time_idx, "player_id_captured"])
-len(set(match_struc_data_df.at[time_idx, "player_id_captured"]))
+len(match_struc_data_df.at[time_idx, "player_trackobj_captured"])
+len(set(match_struc_data_df.at[time_idx, "player_trackobj_captured"]))
 match_explode_data_df.columns.values
 
 match_struc_data_df["group"].value_counts()
@@ -87,8 +115,8 @@ match_struc_data_df["time"].value_counts().sort_index()
 
 match_struc_data_df.at[58416, "data"][0]
 
-player_id = "2792"
-match_struc_data_df[~match_struc_data_df[f"{player_id}_dist"].isna()][f"{player_id}_dist"].sum()
+player_trackobj = "2792"
+match_struc_data_df[~match_struc_data_df[f"{player_trackobj}_dist"].isna()][f"{player_trackobj}_dist"].sum()
 
 match_struc_data_df[match_struc_data_df["possession_homeaway"].isna()]
 match_struc_data_df[~match_struc_data_df["possession"].isna()]
