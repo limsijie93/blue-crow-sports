@@ -138,7 +138,7 @@ def summarise_distance_time(df: pd.DataFrame,
                     x2 = copy_df.at[time_idx + frame_threshold, f"{player_trackobj}_x"]
                     y1 = copy_df.at[time_idx, f"{player_trackobj}_y"]
                     y2 = copy_df.at[time_idx + frame_threshold, f"{player_trackobj}_y"]
-                    distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2)
+                    distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2) / frame_threshold
                     copy_df.at[time_idx, f"{player_trackobj}_dist"] = distance
                     copy_df.at[time_idx, f"{player_trackobj}_time"] = frame_threshold * 0.10
     return copy_df
