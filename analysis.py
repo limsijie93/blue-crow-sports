@@ -8,10 +8,8 @@ Author: @sijielim
 """
 
 import json
-import math
 import os
 
-import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 
@@ -42,8 +40,7 @@ match_structured_data_json_path = os.path.join(match_data_dir, "structured_data.
 with open(match_data_json_path, "r") as f:
     match_info_dict = json.load(f)
 match_struc_data_df = pd.read_json(match_structured_data_json_path)
-match_struc_data_df[["possession_player_trackobj", "possession_homeaway"]
-                    ] = pd.json_normalize(match_struc_data_df["possession"])
+match_struc_data_df[["possession_player_trackobj", "possession_homeaway"]] = pd.json_normalize(match_struc_data_df["possession"])
 match_struc_data_df.drop(["possession"], axis=1, inplace=True)
 match_struc_data_df["possession_homeaway"] = match_struc_data_df["possession_homeaway"].apply(lambda x: x.replace(" team", "") if x else x)
 
@@ -120,8 +117,8 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
             player_match_stat[team_pos][player_trackobj]["speed_onball"] = dist_onball / time_onball
 
             #### Offball movement
-            player_match_stat_df[f"{player_trackobj}_dist_offball"] = player_match_stat_df[f"{player_trackobj}_dist"] - player_match_stat_df[f"{player_trackobj}_dist_onball"]
-            player_match_stat_df[f"{player_trackobj}_time_offball"] = player_match_stat_df[f"{player_trackobj}_time"] - player_match_stat_df[f"{player_trackobj}_time_onball"]
+            player_match_stat_df[f"{player_trackobj}_dist_offball"] = player_match_stat_df[f"{player_trackobj}_dist"] - player_match_stat_df[f"{player_trackobj}_dist_onball"].fillna(0)
+            player_match_stat_df[f"{player_trackobj}_time_offball"] = player_match_stat_df[f"{player_trackobj}_time"] - player_match_stat_df[f"{player_trackobj}_time_onball"].fillna(0)
 
             dist_offball = player_match_stat_df[f"{player_trackobj}_dist_offball"].sum()
             time_offball = player_match_stat_df[f"{player_trackobj}_time_offball"].sum()
@@ -131,8 +128,8 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
             player_match_stat[team_pos][player_trackobj]["speed_offball"] = dist_offball / time_offball
 
             #### Counter check
-            assert dist_onball + dist_offball == dist, f"Distance for {player_trackobj} doesn't tally: {dist_onball} vs {dist_offball} vs {dist}"
-            assert time_onball + time_offball == time, f"Time for {player_trackobj} doesn't tally: {time_onball} vs {time_offball} vs {time}"
+            assert abs(dist - dist_onball - dist_offball) <= 1, f"Distance for {player_trackobj} doesn't tally: {dist_onball} vs {dist_offball} vs {dist}"
+            assert abs(time - time_onball - time_offball) <= 1, f"Time for {player_trackobj} doesn't tally: {time_onball} vs {time_offball} vs {time}"
 
             ############################################################
 
@@ -163,7 +160,7 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
                 ].prod(axis=1)
 
                 player_match_stat_df[f"{player_trackobj}_{metric}_teampos_offball"] = player_match_stat_df[f"{player_trackobj}_{metric}_teampos"] - \
-                    player_match_stat_df[f"{player_trackobj}_{metric}_teampos_onball"]
+                    player_match_stat_df[f"{player_trackobj}_{metric}_teampos_onball"].fillna(0)
 
             dist_teampos_onball = player_match_stat_df[f"{player_trackobj}_dist_teampos_onball"].sum()
             time_teampos_onball = player_match_stat_df[f"{player_trackobj}_time_teampos_onball"].sum()
@@ -172,7 +169,7 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
             player_match_stat[team_pos][player_trackobj]["time_teampos_onball"] = time_teampos_onball
             player_match_stat[team_pos][player_trackobj]["speed_teampos_onball"] = dist_teampos_onball / time_teampos_onball
 
-            dist_teampos_offball = player_match_stat_df[f"{player_trackobj}_time_teampos_offball"].sum()
+            dist_teampos_offball = player_match_stat_df[f"{player_trackobj}_dist_teampos_offball"].sum()
             time_teampos_offball = player_match_stat_df[f"{player_trackobj}_time_teampos_offball"].sum()
 
             player_match_stat[team_pos][player_trackobj]["dist_teampos_offball"] = dist_teampos_offball
@@ -180,25 +177,27 @@ for player_idx, (home_player_trackobj, away_player_trackobj) in enumerate(
             player_match_stat[team_pos][player_trackobj]["speed_teampos_offball"] = dist_teampos_offball / time_teampos_offball
 
             #### Counter check
-            assert dist_teampos_onball + dist_teampos_offball == dist_teampos, f"Distance in possession for {player_trackobj} doesn't tally: {dist_teampos_onball} vs {dist_teampos_offball} vs {dist_teampos}"
-            assert time_teampos_onball + time_teampos_offball == time_teampos, f"Time in possession for {player_trackobj} doesn't tally: {time_teampos_onball} vs {time_teampos_offball} vs {time_teampos}"
+            dist_diff = abs(dist_teampos - dist_teampos_onball - dist_teampos_offball)
+            time_diff = abs(time_teampos - time_teampos_onball - time_teampos_offball)
 
-            ####################################################################################
+            assert dist_diff <= 1 , f"Distance in possession for {player_trackobj} doesn't tally: {dist_diff}. {dist_teampos_onball} vs {dist_teampos_offball} vs {dist_teampos}"
+            assert time_diff <= 1, f"Time in possession for {player_trackobj} doesn't tally: {time_diff}. {time_teampos_onball} vs {time_teampos_offball} vs {time_teampos}"
 
-            ## 3. Calculate distance travelled when the player's team is NOT in possession
-            #### Note: Under this scenario, player can only be offball
+            # ####################################################################################
 
-            dist_teamnopos = dist - dist_teampos
-            time_teamnopos = time - time_teampos
-            player_match_stat[team_pos][player_trackobj]["dist_teamnopos"] = dist_teamnopos
-            player_match_stat[team_pos][player_trackobj]["time_teamnopos"] = time_teamnopos
-            player_match_stat[team_pos][player_trackobj]["speed_teamnopos"] = dist_teamnopos / time_teamnopos
+            # ## 3. Calculate distance travelled when the player's team is NOT in possession
+            # #### Note: Under this scenario, player can only be offball
 
-            player_match_stat[team_pos][player_trackobj]["dist_teamnopos_offball"] = dist_teamnopos
-            player_match_stat[team_pos][player_trackobj]["time_teamnopos_offball"] = time_teamnopos
-            player_match_stat[team_pos][player_trackobj]["speed_teamnopos_offball"] = dist_teamnopos / time_teamnopos
+            # dist_teamnopos = dist - dist_teampos
+            # time_teamnopos = time - time_teampos
+            # player_match_stat[team_pos][player_trackobj]["dist_teamnopos"] = dist_teamnopos
+            # player_match_stat[team_pos][player_trackobj]["time_teamnopos"] = time_teamnopos
+            # player_match_stat[team_pos][player_trackobj]["speed_teamnopos"] = dist_teamnopos / time_teamnopos
 
-            ############################################################
+            # player_match_stat[team_pos][player_trackobj]["dist_teamnopos_offball"] = dist_teamnopos
+            # player_match_stat[team_pos][player_trackobj]["time_teamnopos_offball"] = time_teamnopos
+            # player_match_stat[team_pos][player_trackobj]["speed_teamnopos_offball"] = dist_teamnopos / time_teamnopos
+            # ############################################################
 
 
 
