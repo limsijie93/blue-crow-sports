@@ -100,6 +100,15 @@ def explode_data(df: pd.DataFrame,
         print(f'{track_id}, {x}, {y}, {player_trackobj_in_frame_list}')
     return df
 
+def mt_to_sec(match_time: str):
+    """
+    Convert the match time from format (XX:XX.XX) to seconds
+    """
+    mins, secs_micro = match_time.split(":")
+    secs, micro = secs_micro.split(".")
+    total_secs = float(mins) * 60 + float(secs) + float(micro)/100
+    return total_secs
+
 def calc_dist(x1: float,
               y1: float,
               x2: float,
@@ -111,8 +120,8 @@ def calc_dist(x1: float,
     return distance
 
 def summarise_distance_time(df: pd.DataFrame,
-                            frame_smoothing_threshold: int=10,
-                            frame_rate: float=0.10):
+                            frame_rate_smoothing_threshold: int=10,
+                            time_per_frame_rate: float=0.10):
     """
     Summarise the distance ran by the player on a frame to frame basis
     Setting the default frame_smoothing_threshold to be 10
@@ -133,25 +142,34 @@ def summarise_distance_time(df: pd.DataFrame,
         total_time_record = len(df)
 
         for time_idx, time in zip(copy_df.index, copy_df["time"]):
-            if time_idx < (total_time_record - frame_smoothing_threshold):
+            if time_idx < (total_time_record - frame_rate_smoothing_threshold):
                 print(f"Frame {time_idx} / {total_time_record} @ time {time}")
                 print("^" * 20)
                 player_trackobj_in_frame_list = copy_df.at[time_idx, "player_trackobj_captured"]
                 num_players_in_frame = len(player_trackobj_in_frame_list)
                 for player_idx, player_trackobj in enumerate(player_trackobj_in_frame_list):
                     current_track_id = copy_df.at[time_idx, f"{player_trackobj}_track_id"]
-                    forward_track_id = copy_df.at[time_idx + frame_smoothing_threshold, f"{player_trackobj}_track_id"]
-                    if (player_trackobj in copy_df.at[time_idx + frame_smoothing_threshold, "player_trackobj_captured"]) & \
-                        (current_track_id == forward_track_id):
+                    forward_track_id = copy_df.at[time_idx + frame_rate_smoothing_threshold, f"{player_trackobj}_track_id"]
+                    current_seconds = copy_df.at[time_idx, "time_seconds"]
+                    forward_seconds = copy_df.at[time_idx + frame_rate_smoothing_threshold, "time_seconds"]
+
+                    track_id_same_flag = current_track_id == forward_track_id
+                    time_smoothing_same_flag = current_seconds + frame_rate_smoothing_threshold * time_per_frame_rate <= forward_seconds
+                    ## Assumption: In some situation, the AI may not be able to capture the player properly.
+                    ## However, from the continuation of motion, we know that it is still the same player
+                    ## Thus, if the player is within the frame_rate_smoothing_threshold, we will still calculate it even if his/her track_id changes
+
+                    if (player_trackobj in copy_df.at[time_idx + frame_rate_smoothing_threshold, "player_trackobj_captured"]) & \
+                        (track_id_same_flag or time_smoothing_same_flag):
                         print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_trackobj}")
                         print("*" * 5)
                         x1 = copy_df.at[time_idx, f"{player_trackobj}_x"]
-                        x2 = copy_df.at[time_idx + frame_smoothing_threshold, f"{player_trackobj}_x"]
+                        x2 = copy_df.at[time_idx + frame_rate_smoothing_threshold, f"{player_trackobj}_x"]
                         y1 = copy_df.at[time_idx, f"{player_trackobj}_y"]
-                        y2 = copy_df.at[time_idx + frame_smoothing_threshold, f"{player_trackobj}_y"]
-                        distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2) / frame_smoothing_threshold
+                        y2 = copy_df.at[time_idx + frame_rate_smoothing_threshold, f"{player_trackobj}_y"]
+                        distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2) / frame_rate_smoothing_threshold
                         copy_df.at[time_idx, f"{player_trackobj}_dist"] = distance
-                        copy_df.at[time_idx, f"{player_trackobj}_time"] = frame_rate
+                        copy_df.at[time_idx, f"{player_trackobj}_time"] = time_per_frame_rate
         summary_df = pd.concat([summary_df, copy_df], axis=0).reset_index()
 
     return summary_df

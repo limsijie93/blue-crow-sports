@@ -19,7 +19,8 @@ from blue_crow_sports.utils import (explode_data,
                                     extract_home_away_player_trackobj,
                                     player_match_stat_template,
                                     player_stat_template,
-                                    summarise_distance_time)
+                                    summarise_distance_time,
+                                    mt_to_sec)
 
 load_dotenv("blue_crow_sports/.env")
 
@@ -50,6 +51,7 @@ match_struc_data_df["possession_homeaway"] = match_struc_data_df["possession_hom
 match_struc_data_df = match_struc_data_df[~match_struc_data_df["time"].isna()]
 match_struc_data_df = match_struc_data_df.reset_index(drop=True)
 
+match_struc_data_df["time_seconds"] = match_struc_data_df["time"].apply(mt_to_sec)
 match_struc_data_df["data_length"] = match_struc_data_df["data"].apply(lambda x: len(x))
 match_struc_data_df["player_trackobj_captured"] = [[]] * len(match_struc_data_df)
 
@@ -69,14 +71,18 @@ match_explode_data_df = match_explode_data_df.reindex(
 # match_explode_data_df[match_explode_data_df["time"] == "45:00.00"]
 
 ## Summarise the distance travelled by each player from frame to frame
-FRAME_SMOOTHING_THRESHOLD = 1 # Threshold number of frames to consider as continous movement
+FRAME_RATE_SMOOTHING_THRESHOLD = 10 # Threshold number of frames to consider as continous movement
+TIME_PER_FRAME_RATE = 0.10
 match_player_stats_data_df = summarise_distance_time(
-    df=match_explode_data_df, frame_smoothing_threshold=FRAME_SMOOTHING_THRESHOLD)
+    df=match_explode_data_df,
+    frame_rate_smoothing_threshold=FRAME_RATE_SMOOTHING_THRESHOLD,
+    time_per_frame_rate=TIME_PER_FRAME_RATE)
 match_player_stats_data_df = match_player_stats_data_df.reindex(
     sorted(match_player_stats_data_df.columns), axis=1)
 
 player_id = "10748"
-match_player_stats_data_df[~match_player_stats_data_df[f"{player_id}_dist"].isna()].iloc[:50]
+match_player_stats_data_df[~match_player_stats_data_df[f"{player_id}_dist"].isna()].iloc[:20][["time", f"{player_id}_track_id", f"{player_id}_dist", f"{player_id}_time", f"{player_id}_x", f"{player_id}_y"]]
+match_player_stats_data_df.iloc[:20][["time", f"{player_id}_track_id", f"{player_id}_dist", f"{player_id}_time", f"{player_id}_x", f"{player_id}_y"]]
 match_player_stats_data_df.columns.values
 
 ## Calculate:
