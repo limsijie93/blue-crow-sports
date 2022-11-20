@@ -121,24 +121,28 @@ def summarise_distance_time(df: pd.DataFrame,
             1. {player_trackobj}_dist: Distance travelled
             2. {player_trackobj}_time: Number of seconds travelled
     """
-    copy_df = df.copy()
-    total_time_record = len(df)
+    summary_df = pd.DataFrame()
+    for period in [1, 2]:
+        copy_df = df[df["period"] == period]
+        total_time_record = len(df)
 
-    for time_idx, time in enumerate(copy_df["time"]):
-        if time_idx < (total_time_record - frame_threshold):
-            print(f"Frame {time_idx} / {total_time_record} @ time {time}")
-            print("^" * 20)
-            player_trackobj_in_frame_list = copy_df.at[time_idx, "player_trackobj_captured"]
-            num_players_in_frame = len(player_trackobj_in_frame_list)
-            for player_idx, player_trackobj in enumerate(player_trackobj_in_frame_list):
-                if player_trackobj in copy_df.at[time_idx + frame_threshold, "player_trackobj_captured"]:
-                    print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_trackobj}")
-                    print("*" * 5)
-                    x1 = copy_df.at[time_idx, f"{player_trackobj}_x"]
-                    x2 = copy_df.at[time_idx + frame_threshold, f"{player_trackobj}_x"]
-                    y1 = copy_df.at[time_idx, f"{player_trackobj}_y"]
-                    y2 = copy_df.at[time_idx + frame_threshold, f"{player_trackobj}_y"]
-                    distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2) / frame_threshold
-                    copy_df.at[time_idx, f"{player_trackobj}_dist"] = distance
-                    copy_df.at[time_idx, f"{player_trackobj}_time"] = frame_threshold * 0.10
+        for time_idx, time in enumerate(copy_df["time"]):
+            if time_idx < (total_time_record - frame_threshold):
+                print(f"Frame {time_idx} / {total_time_record} @ time {time}")
+                print("^" * 20)
+                player_trackobj_in_frame_list = copy_df.at[time_idx, "player_trackobj_captured"]
+                num_players_in_frame = len(player_trackobj_in_frame_list)
+                for player_idx, player_trackobj in enumerate(player_trackobj_in_frame_list):
+                    if player_trackobj in copy_df.at[time_idx + frame_threshold, "player_trackobj_captured"]:
+                        print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_trackobj}")
+                        print("*" * 5)
+                        x1 = copy_df.at[time_idx, f"{player_trackobj}_x"]
+                        x2 = copy_df.at[time_idx + frame_threshold, f"{player_trackobj}_x"]
+                        y1 = copy_df.at[time_idx, f"{player_trackobj}_y"]
+                        y2 = copy_df.at[time_idx + frame_threshold, f"{player_trackobj}_y"]
+                        distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2) / frame_threshold
+                        copy_df.at[time_idx, f"{player_trackobj}_dist"] = distance
+                        copy_df.at[time_idx, f"{player_trackobj}_time"] = frame_threshold * 0.10
+        summary_df = pd.concat([summary_df, copy_df], axis=0)
+
     return copy_df

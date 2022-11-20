@@ -65,10 +65,8 @@ match_explode_data_df = match_explode_data_df.reindex(
     sorted(match_explode_data_df.columns), axis=1)
 
 ## There are some duplicated rows in the data. We will remove those rows
-match_explode_data_df.drop(["player_trackobj_captured", "data"], axis=1).columns.values
-match_explode_data_df.drop(["player_trackobj_captured"], axis=1).loc[0].values
-match_explode_data_df.drop(["player_trackobj_captured", "data"], axis=1).drop_duplicates()
-match_explode_data_df = match_explode_data_df.drop_duplicates()
+match_explode_data_df[match_explode_data_df["time"].duplicated()]
+match_explode_data_df[match_explode_data_df["time"] == "45:00.00"]
 
 ## Summarise the distance travelled by each player from frame to frame
 FRAME_THRESHOLD = 1 # Threshold number of frames to consider as continous movement
