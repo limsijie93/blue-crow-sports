@@ -127,8 +127,8 @@ match_explode_data_df = match_explode_data_df.reindex(
 
 frame_threshold = 10 # Threshold number of frames to consider as continous movement
 
-def summarise_player_distance_time(df: pd.DataFrame,
-                                   frame_threshold: int=10):
+def summarise_distance_time(df: pd.DataFrame,
+                            frame_threshold: int=10):
     """
     Summarise the distance ran by the player on a frame to frame basis
     Setting the default frame_threshold to be 10
@@ -161,8 +161,12 @@ def summarise_player_distance_time(df: pd.DataFrame,
     return copy_df
 
 match_player_stats_data_df = summarise_player_distance_time(df=match_explode_data_df, frame_threshold=10)
+match_player_stats_data_df = match_player_stats_data_df.reindex(
+    sorted(match_player_stats_data_df.columns), axis=1)
 
 ##################### WORKINGS #####################
+
+match_player_stats_data_df.columns.values
 
 len(match_struc_data_df.at[time_idx, "player_id_captured"])
 len(set(match_struc_data_df.at[time_idx, "player_id_captured"]))
