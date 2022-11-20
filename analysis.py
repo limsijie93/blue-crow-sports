@@ -43,6 +43,10 @@ INPUT_JSON_PATH = os.path.join(IN_DATA_DIR, "matches.json")
 OUT_DATA_DIR = os.path.join(ROOT, "blue_crow_sports", "plotly")
 os.makedirs(OUT_DATA_DIR, exist_ok=True)
 
+# Threshold number of frames to consider as continous movement
+FRAME_RATE_SMOOTHING_THRESHOLD = 1
+TIME_PER_FRAME_RATE = 0.10
+
 file_df = pd.read_json(INPUT_JSON_PATH)
 
 all_player_stat_summary_df = pd.DataFrame()
@@ -53,7 +57,7 @@ for match_metadata in file_df.values.tolist():
     home_team = home_team["short_name"]
     away_team = away_team["short_name"]
 
-    match_data_dir = os.path.join(DATA_DIR, "matches", str(match_id))
+    match_data_dir = os.path.join(IN_DATA_DIR, "matches", str(match_id))
     match_data_json_path = os.path.join(match_data_dir, "match_data.json")
     match_structured_data_json_path = os.path.join(match_data_dir, "structured_data.json")
 
@@ -63,6 +67,8 @@ for match_metadata in file_df.values.tolist():
     match_struc_data_df[["possession_player_trackobj", "possession_homeaway"]] = pd.json_normalize(match_struc_data_df["possession"])
     match_struc_data_df.drop(["possession"], axis=1, inplace=True)
     match_struc_data_df["possession_homeaway"] = match_struc_data_df["possession_homeaway"].apply(lambda x: x.replace(" ", "_") if x else x)
+
+    match_struc_data_df[~match_struc_data_df["possession_player_trackobj"].isna()]["possession_player_trackobj"].value_counts()
 
     ## There are certain frames where the group is None. Drop those rows where time == None
     match_struc_data_df = match_struc_data_df[~match_struc_data_df["time"].isna()]
@@ -88,9 +94,6 @@ for match_metadata in file_df.values.tolist():
     # match_explode_data_df[match_explode_data_df["time"] == "45:00.00"]
 
     ## Summarise the distance travelled by each player from frame to frame
-    # Threshold number of frames to consider as continous movement
-    FRAME_RATE_SMOOTHING_THRESHOLD = 1
-    TIME_PER_FRAME_RATE = 0.10
     match_player_stats_data_df = summarise_distance_time(
         df=match_explode_data_df,
         frame_rate_smoothing_threshold=FRAME_RATE_SMOOTHING_THRESHOLD,
@@ -247,8 +250,9 @@ for match_metadata in file_df.values.tolist():
     all_player_stat_summary_df = pd.concat([all_player_stat_summary_df, player_stats_summary_df], axis=0).reset_index(drop=True)
     print(f"*" * 50)
 
+##################### SUMMARISE #####################
 
-##################### VISUALISATION #####################
+## Summarise the all_player_stat_summary_df as some players can be found in multiple matches
 charts_to_plot_list = []
 col_set = []
 for idx, col in enumerate(player_stat_template.keys()):
@@ -257,15 +261,29 @@ for idx, col in enumerate(player_stat_template.keys()):
         col_set = []
     col_set.append(col)
 
+dedup_player_stat_summary_df = all_player_stat_summary_df.groupby(["player_id", "name", "team"]).sum().reset_index()
+match_per_player_df = all_player_stat_summary_df.groupby(["player_id", "name", "team"])["dist"].count().reset_index()
+match_per_player_df.rename(columns={"dist": "match_count"}, inplace=True)
+
+dedup_player_stat_summary_df = dedup_player_stat_summary_df.merge(match_per_player_df, how="inner", on=["player_id", "name", "team"])
+
+for col_set in charts_to_plot_list:
+    dist, time, speed = col_set
+    dedup_player_stat_summary_df[dist] = dedup_player_stat_summary_df[dist] / dedup_player_stat_summary_df["match_count"]
+    dedup_player_stat_summary_df[time] = dedup_player_stat_summary_df[time] / dedup_player_stat_summary_df["match_count"]
+    dedup_player_stat_summary_df[speed] = dedup_player_stat_summary_df[dist] / dedup_player_stat_summary_df[time]
+
+##################### VISUALISATION #####################
 for col_set in charts_to_plot_list:
     x, z, y = col_set
-    fig = px.scatter(all_player_stat_summary_df,
+    fig = px.scatter(dedup_player_stat_summary_df,
                      x=x, y=y, size=z, color="team",
                      title=f"{y} (y-axis) vs {x} (x-axis)",
-                     text="name",
+                     text="name", symbol="match_count",
                      hover_data={
                         "name": True, "player_id": True, "team": True,
-                        x:":.2f", y:":.2f", z:":.2f"
+                        x:":.2f", y:":.2f", z:":.2f",
+                        "match_count": True
                      })
     fig.update_traces(textposition='middle right', textfont={"size": 8})
     fig.update_layout(hoverlabel={"bgcolor": "white",
