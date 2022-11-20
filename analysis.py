@@ -125,26 +125,40 @@ match_explode_data_df["num_player_captured"] = match_explode_data_df["player_id_
 match_explode_data_df = match_explode_data_df.reindex(
     sorted(match_explode_data_df.columns), axis=1)
 
-total_time_record = len(match_struc_data_df)
 frame_threshold = 10 # Threshold number of frames to consider as continous movement
 
-for time_idx, time in enumerate(match_struc_data_df["time"]):
-    if time_idx < (total_time_record - frame_threshold + 1):
-        print(f"Frame {time_idx} / {total_time_record} @ time {time}")
-        print("^" * 20)
-        player_id_in_frame_list = match_struc_data_df.at[time_idx, "player_id_captured"]
-        num_players_in_frame = len(player_id_in_frame_list)
-        for player_idx, player_id in enumerate(player_id_in_frame_list):
-            if player_id in match_struc_data_df.at[time_idx + frame_threshold, "player_id_captured"]:
-                print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_id}")
-                print("*" * 5)
-                x1 = match_struc_data_df.at[time_idx, f"{player_id}_x"]
-                x2 = match_struc_data_df.at[time_idx + frame_threshold, f"{player_id}_x"]
-                y1 = match_struc_data_df.at[time_idx, f"{player_id}_y"]
-                y2 = match_struc_data_df.at[time_idx + frame_threshold, f"{player_id}_y"]
-                distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2)
-                match_struc_data_df.at[time_idx, f"{player_id}_dist"] = distance
+def summarise_player_distance_time(df: pd.DataFrame,
+                                   frame_threshold: int=10):
+    """
+    Summarise the distance ran by the player on a frame to frame basis
+    Setting the default frame_threshold to be 10
 
+    Returns:
+        Copy of the input dataframe with the following additional columns:
+            1. {player_id}_dist: Distance travelled
+            2. {player_id}_time: Number of seconds travelled
+    """
+    copy_df = df.copy()
+    total_time_record = len(df)
+
+    for time_idx, time in enumerate(copy_df["time"]):
+        if time_idx < (total_time_record - frame_threshold + 1):
+            print(f"Frame {time_idx} / {total_time_record} @ time {time}")
+            print("^" * 20)
+            player_id_in_frame_list = copy_df.at[time_idx, "player_id_captured"]
+            num_players_in_frame = len(player_id_in_frame_list)
+            for player_idx, player_id in enumerate(player_id_in_frame_list):
+                if player_id in copy_df.at[time_idx + frame_threshold, "player_id_captured"]:
+                    print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_id}")
+                    print("*" * 5)
+                    x1 = copy_df.at[time_idx, f"{player_id}_x"]
+                    x2 = copy_df.at[time_idx + frame_threshold, f"{player_id}_x"]
+                    y1 = copy_df.at[time_idx, f"{player_id}_y"]
+                    y2 = copy_df.at[time_idx + frame_threshold, f"{player_id}_y"]
+                    distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2)
+                    copy_df.at[time_idx, f"{player_id}_dist"] = distance
+                    copy_df.at[time_idx, f"{player_id}_time"] = frame_threshold * 0.10
+    return copy_df
 
 
 ##################### WORKINGS #####################
