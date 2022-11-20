@@ -52,9 +52,6 @@ match_struc_data_df["group"] = match_struc_data_df["group"].replace("away team",
 
 match_struc_data_df["data_length"] = match_struc_data_df["data"].apply(lambda x: len(x))
 
-match_struc_data_df["group"].value_counts()
-match_struc_data_df["time"].value_counts().sort_index()
-
 def extract_home_away_player_id(match_info: dict):
     """
     Function to extract a list of the player ids and
@@ -116,9 +113,10 @@ for idx, track_list in enumerate(match_struc_data_df["data"]):
 match_explode_data_df = match_explode_data_df.reindex(
     sorted(match_explode_data_df.columns), axis=1)
 
-
-
 match_explode_data_df.columns.values
+
+match_struc_data_df["group"].value_counts()
+match_struc_data_df["time"].value_counts().sort_index()
 
 match_struc_data_df.loc[58416, "data"][0]
 match_struc_data_df[~match_struc_data_df["possession"].isna()]
@@ -139,3 +137,5 @@ match_info_dict["players"][0]
 ## 3. The tracking is also not continuous. Assuming
 ## 4. Stationary/slow movement may not be because they are not moving fast. Maybe they are just defending
 ## On-ball movement vs Off-ball movement
+## 5. There are some stoppage time moments that are also captured. In those moments, the players are moving, but they are not in a competitive mode.
+## This obscures their speed because there's no real intention to be fast.
