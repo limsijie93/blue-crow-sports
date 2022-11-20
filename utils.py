@@ -111,10 +111,16 @@ def calc_dist(x1: float,
     return distance
 
 def summarise_distance_time(df: pd.DataFrame,
-                            frame_smoothing_threshold: int=10):
+                            frame_smoothing_threshold: int=10,
+                            frame_rate: float=0.10):
     """
     Summarise the distance ran by the player on a frame to frame basis
     Setting the default frame_smoothing_threshold to be 10
+
+    Input:
+        df: DataFrame that consists of each player's x, y coordinates
+        frame_smoothing_threshold: Number of frames to smooth in the calculation
+        frame_rate: Number of seconds for each frame
 
     Returns:
         Copy of the input dataframe with the following additional columns:
@@ -145,7 +151,7 @@ def summarise_distance_time(df: pd.DataFrame,
                         y2 = copy_df.at[time_idx + frame_smoothing_threshold, f"{player_trackobj}_y"]
                         distance = calc_dist(x1=x1, y1=y1, x2=x2, y2=y2) / frame_smoothing_threshold
                         copy_df.at[time_idx, f"{player_trackobj}_dist"] = distance
-                        copy_df.at[time_idx, f"{player_trackobj}_time"] = frame_smoothing_threshold * 0.10
+                        copy_df.at[time_idx, f"{player_trackobj}_time"] = frame_rate
         summary_df = pd.concat([summary_df, copy_df], axis=0).reset_index()
 
     return summary_df
