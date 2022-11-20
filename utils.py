@@ -11,6 +11,22 @@ import math
 import numpy as np
 import pandas as pd
 
+player_match_stat_template = {
+    "home": {},
+    "away": {}
+}
+
+player_stat_template = {
+    "dist": 0, "time": 0, "speed": 0,
+    "dist_onball": 0, "time_onball": 0, "speed_onball": 0,
+    "dist_offball": 0, "time_offball": 0, "speed_offball": 0,
+    "dist_teampos": 0, "time_teampos": 0, "speed_teampos": 0,
+    "dist_teampos_onball": 0, "time_teampos_onball": 0, "speed_teampos_onball": 0,
+    "dist_teampos_offball": 0, "time_teampos_offball": 0, "speed_teampos_offball": 0,
+    "dist_teamnopos": 0, "time_teamnopos": 0, "speed_teamnopos": 0,
+    "dist_teamnopos_offball": 0, "time_teamnopos_offball": 0, "speed_teamnopos_offball": 0
+}
+
 def extract_home_away_player_trackobj(match_info: dict):
     """
     Function to extract a list of the player ids and
