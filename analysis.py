@@ -31,6 +31,7 @@ file_df = pd.read_json(INPUT_JSON_PATH)
 
 all_player_stat_summary_df = pd.DataFrame()
 for match_metadata in file_df.values.tolist():
+    print(f"Processing {match_metadata}")
     # match_metadata = file_df.values.tolist()[0]
     match_status, match_dt, home_team, away_team, match_id = match_metadata
     home_team = home_team["short_name"]
@@ -97,7 +98,7 @@ for match_metadata in file_df.values.tolist():
 
         for team_pos, player_trackobj in zip(["home_team", "away_team"], [home_player_trackobj, away_player_trackobj]):
             if f"{player_trackobj}_dist" in match_player_stats_data_df.columns:
-                print(f"Process player_trackobj: {player_trackobj}")
+                # print(f"Process player_trackobj: {player_trackobj}")
 
                 ## Filter for subset where player is in view
                 player_match_stat_df = match_player_stats_data_df[
@@ -227,10 +228,8 @@ for match_metadata in file_df.values.tolist():
 
     player_stats_summary_df["team"] = player_stats_summary_df["team"].apply(get_team_name, match_info=match_info_dict)
 
-    all_player_stat_summary_df = pd.concat([all_player_stat_summary_df, player_stats_summary_df], axis=0)
-
-# stat_summary_df["time"].sum()
-# match_explode_data_df[match_explode_data_df["num_player_captured"] > 0]
+    all_player_stat_summary_df = pd.concat([all_player_stat_summary_df, player_stats_summary_df], axis=0).reset_index()
+    print(f"*" * 50)
 
 
 ##################### VISUALISATION #####################

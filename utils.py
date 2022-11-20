@@ -97,7 +97,7 @@ def explode_data(df: pd.DataFrame,
         df.at[row_idx, f"{player_trackobj}_homeaway"] = home_away_none
         df.at[row_idx, "player_trackobj_captured"] = list(set(player_trackobj_in_frame_list))
 
-        print(f'{track_id}, {x}, {y}, {player_trackobj_in_frame_list}')
+        # print(f'{track_id}, {x}, {y}, {player_trackobj_in_frame_list}')
     return df
 
 def mt_to_sec(match_time: str):
@@ -147,12 +147,13 @@ def summarise_distance_time(df: pd.DataFrame,
     summary_df = pd.DataFrame()
     for period in [1, 2]:
         copy_df = df[df["period"] == period]
+        copy_df = copy_df.reset_index()
         total_time_record = len(df)
 
         for time_idx, time in zip(copy_df.index, copy_df["time"]):
             if time_idx < (total_time_record - frame_rate_smoothing_threshold):
-                print(f"Frame {time_idx} / {total_time_record} @ time {time}")
-                print("^" * 20)
+                # print(f"Frame {time_idx} / {total_time_record} @ time {time}")
+                # print("^" * 20)
                 player_trackobj_in_frame_list = copy_df.at[time_idx, "player_trackobj_captured"]
                 num_players_in_frame = len(player_trackobj_in_frame_list)
                 for player_idx, player_trackobj in enumerate(player_trackobj_in_frame_list):
@@ -169,8 +170,8 @@ def summarise_distance_time(df: pd.DataFrame,
 
                     if (player_trackobj in copy_df.at[time_idx + frame_rate_smoothing_threshold, "player_trackobj_captured"]) & \
                         (track_id_same_flag or time_smoothing_same_flag):
-                        print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_trackobj}")
-                        print("*" * 5)
+                        # print(f"Frame {time_idx}: Player count {player_idx} / {num_players_in_frame} : {player_trackobj}")
+                        # print("*" * 5)
                         x1 = copy_df.at[time_idx, f"{player_trackobj}_x"]
                         x2 = copy_df.at[time_idx + frame_rate_smoothing_threshold, f"{player_trackobj}_x"]
                         y1 = copy_df.at[time_idx, f"{player_trackobj}_y"]
